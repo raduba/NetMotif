@@ -43,6 +43,7 @@ class ESU:
         my_bar.empty()
 
         esu_time = time.perf_counter()
+        print(f"enumerated {len(self.subgraph_list)} in {(esu_time - start_time):.6f} seconds")
         st.write(
             f"ESU.esu time to find {len(self.subgraph_list)} subgraphs: {(esu_time - start_time):.6f} seconds"
         )
@@ -53,22 +54,28 @@ class ESU:
 
         labeling_start_time = time.perf_counter()
 
-        for i, subgraph in enumerate(self.subgraph_list):
-            sub = Subgraph(graph_type=self.graph_type, input=subgraph)
-            d6 = lb.get_basic_graph_label(sub.G, self.graph_type)
+        # apply the d6 labels in parallel
+        basic_labeling_start_time = time.perf_counter()
+        subgraphs = [Subgraph(graph_type=self.graph_type, input=s) for s in self.subgraph_list]
+        subgraphs_params = [(s, self.graph_type) for s in self.subgraph_list]
+        basic_labels = lb.calculate_basic_labels(subgraphs_params)
+        for s, basic_label in zip(subgraphs, basic_labels):
+            s.basic_label = basic_label
+        st.write(
+            f"ESU.basic_labeling_time time for {len(self.subgraph_list)} subgraphs: {(time.perf_counter() - basic_labeling_start_time):.6f} seconds"
+        )
 
-            if d6 not in self.label_conversion_map:
-                self.number_of_conversions += 1
-                g6 = lb.get_graph_label(
-                    sub.G, self.graph_type
-                )  # Expensive operation, minimize calls!
-                self.label_conversion_map[d6] = g6
-                sub.set_label(g6)
-            else:
-                sub.set_label(self.label_conversion_map[d6])
+        progress_text = "Canonical label translation in progress. Please wait."
+        my_bar.progress(0, text=progress_text)
 
-            self.Subgraph_list.append(sub)
-            my_bar.progress((i + 1) / len(self.subgraph_list), text=progress_text)
+        labelg_start_time = time.perf_counter()
+        labelg_input = [sub.basic_label for sub in subgraphs]
+        labels = lb.collect_labelg(labelg_input)
+        for i, label in enumerate(labels):
+            subgraphs[i].set_label(label)
+        st.write(f"ESU.labelg time: {(time.perf_counter() - labelg_start_time):.6f} seconds")
+
+        self.Subgraph_list = subgraphs
 
         st.write(f"ESU.labeling time: {(time.perf_counter() - labeling_start_time):.6f} seconds")
 

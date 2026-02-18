@@ -1,8 +1,10 @@
+import time
 import networkx as nx
 import os
 import subprocess
 import streamlit as st
 from collections import defaultdict
+from multiprocessing import Pool
 from src.graph_types import GraphType
 
 
@@ -180,6 +182,41 @@ def toLabelg(label: str):
     return labelg_output
 
 
+def collect_labelg(labels: list[str]) -> list[str]:
+    """
+    Collect the canonical label for all the labels using only one labelg process, instead of
+    spawning a process for each label.
+    Expect the labelg executable to exists in the root directory.
+    Pass the labels list with each label on its own line, labelg will maintain the order in the
+    output results.
+    """
+    start_time = time.perf_counter()
+    label_g = "./labelg"
+    if os.path.isfile(label_g):
+        os.chmod(label_g, 0o755)
+    else:
+        raise RuntimeError("labelg executable not found")
+
+    unique_labels = list(set(labels))
+    labelg_input = "\n".join(unique_labels)
+    result = subprocess.run(
+        [label_g],
+        input=labelg_input,
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+
+    # if subprocess runs correctly, return the output lines
+    if result.returncode != 0:
+        raise RuntimeError(f"labelg subprocess failed with return code: {result.returncode}")
+
+    result_labels = result.stdout.rstrip().split("\n")
+    canonical_labels = dict(zip(unique_labels, result_labels))
+    print(f"Time to label {len(labels)} labels: {(time.perf_counter() - start_time):.6f} s")
+    return [canonical_labels[label] for label in labels]
+
+
 def get_basic_graph_label(nx_graph: nx.Graph, graph_type: GraphType) -> str:
     """
     Label a graph in either graph6 (undirected) or digraph6 (directed) format.
@@ -196,3 +233,17 @@ def get_graph_label(nx_graph: nx.Graph, graph_type: GraphType) -> str:
     """
     # for linux
     return toLabelg(get_basic_graph_label(nx_graph, graph_type))
+
+
+def _apply_basic_label_worker(args):
+    """
+    Worker arguments of type (nx.Graph | nx.DiGraph, GraphType) so we can compute the subgraph
+    labels in parallel
+    """
+    g, graph_type = args
+    return get_basic_graph_label(g, graph_type)
+
+
+def calculate_basic_labels(subgraphs):
+    with Pool(processes=8) as p:
+        return p.map(_apply_basic_label_worker, subgraphs)
