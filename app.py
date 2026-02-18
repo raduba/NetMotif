@@ -9,7 +9,8 @@ import src.random_graph as rg
 import src.motif_statistics as stat
 
 st.set_page_config(page_title="NEMO motif detection program")
-st.title('NEMO motif detection program')
+st.title("NEMO motif detection program")
+
 
 def form_callback(start_time):
     """
@@ -53,7 +54,7 @@ def form_callback(start_time):
         G.draw_subgraph()
 
     # Generate random graphs
-    random_graphs = rg.generate_random_graphs(G, st.session_state['number_of_random_graphs'])
+    random_graphs = rg.generate_random_graphs(G, st.session_state["number_of_random_graphs"])
 
     stats = stat.process_statistics(G, random_graphs)
 
@@ -74,6 +75,7 @@ def form_callback(start_time):
 
     if st.session_state["nemo_count_option"] == "SubgraphCollection":
         G.generate_subgraph_collection()
+
 
 def main():
     # Initialize global session state for user form submission
@@ -122,14 +124,14 @@ def main():
                 value=3,
                 placeholder="Input motif size...",
                 min_value=1,
-                max_value=5,
+                max_value=8,
             )
 
             number_of_random_graphs = st.number_input(
                 "Number of random graphs",
-                value=20,
+                value=2,
                 placeholder="Input number of graphs...",
-                min_value=5,
+                min_value=2,
                 max_value=100,
             )
 
@@ -140,9 +142,7 @@ def main():
             )
 
         with col2:
-            st.write(
-                "NOTE: Uploading more than 1000 nodes might consume more processing time."
-            )
+            st.write("NOTE: Uploading more than 1000 nodes might consume more processing time.")
             st.write("Visualize Options:")
             is_visualize_graph = st.checkbox("Visualize graph")
             is_visualize_subgraph = st.checkbox("Visualize subgraph")
@@ -162,6 +162,7 @@ def main():
         form_callback(start_time)
 
     st.markdown("<br>", unsafe_allow_html=True)
+
 
 if __name__ == "__main__":
     main()

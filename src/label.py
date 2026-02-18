@@ -5,6 +5,7 @@ import streamlit as st
 from collections import defaultdict
 from src.graph_types import GraphType
 
+
 def print_labelg(graph_type, subgraph_list: list[nx.Graph]):
     """
     Takes in esu subgraph list and outputs labels into a .txt file.
@@ -48,6 +49,7 @@ def print_labelg(graph_type, subgraph_list: list[nx.Graph]):
         st.write(e.stderr)
 
     return labelg_output_file
+
 
 def graph6(graph: nx.Graph) -> str:
     """
@@ -142,8 +144,9 @@ def digraph6(graph: nx.DiGraph) -> str:
 
     return chr(38) + N + R
 
-def toLabelg(label:str):
-    label_g = "./NetMotif/labelg"  # Name of the executable
+
+def toLabelg(label: str):
+    label_g = "./labelg"  # Name of the executable
     # Check if the labelg executable exists in the root directory
     if os.path.isfile(label_g):
         os.chmod(label_g, 0o755)  # Ensure it is executable
@@ -160,7 +163,7 @@ def toLabelg(label:str):
             check=True,
         )
 
-        #if subprocess runs correctly
+        # if subprocess runs correctly
         if result.returncode == 0:
             labelg_output = result.stdout.rstrip()
         else:
@@ -176,6 +179,7 @@ def toLabelg(label:str):
 
     return labelg_output
 
+
 def get_basic_graph_label(nx_graph: nx.Graph, graph_type: GraphType) -> str:
     """
     Label a graph in either graph6 (undirected) or digraph6 (directed) format.
@@ -185,9 +189,10 @@ def get_basic_graph_label(nx_graph: nx.Graph, graph_type: GraphType) -> str:
     if graph_type == GraphType.DIRECTED:
         return digraph6(nx_graph)
 
+
 def get_graph_label(nx_graph: nx.Graph, graph_type: GraphType) -> str:
     """
     Label a graph in labelg format.
     """
-    #for linux
+    # for linux
     return toLabelg(get_basic_graph_label(nx_graph, graph_type))
