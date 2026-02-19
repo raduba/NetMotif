@@ -95,7 +95,7 @@ def main():
 
     demo = st.button("Use Demo File")
     if demo:
-        demo_path = "./NetMotif/data/bestTest.txt"
+        demo_path = "./data/bestTest.txt"
         if os.path.exists(demo_path):
             with open(demo_path, "rb") as file:
                 file_content = file.read()

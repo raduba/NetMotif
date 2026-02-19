@@ -34,7 +34,7 @@ st.markdown(
 
 """
 )
-st.image('./NetMotif/resources/ESUexample.png', caption='Figure 4')
+st.image('./resources/ESUexample.png', caption='Figure 4')
 st.markdown(
     """
     #### G6 Labeling
@@ -53,7 +53,7 @@ st.markdown(
     a unique label for each non-isomorphic graph.
     """
 )
-st.image('./NetMotif/resources/adjacencyExample.png', caption='Figure 5')
+st.image('./resources/adjacencyExample.png', caption='Figure 5')
 st.markdown(
     """
     #### Random Graph Generation
@@ -64,5 +64,5 @@ st.markdown(
     randomly matched together to make a new graph.
     """
 )
-st.image('./NetMotif/resources/figure6.png', caption='Figure 6')
-st.image('./NetMotif/resources/figure7.png', caption='Figure 7')
+st.image('./resources/figure6.png', caption='Figure 6')
+st.image('./resources/figure7.png', caption='Figure 7')
