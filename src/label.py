@@ -4,7 +4,8 @@ import os
 import subprocess
 import streamlit as st
 from src.graph_types import GraphType
-
+from pyinstrument import Profiler
+import atexit
 
 def graph6(graph: nx.Graph) -> str:
     """
@@ -221,3 +222,19 @@ def get_graph_label(nx_graph: nx.Graph, graph_type: GraphType) -> str:
     """
     # for linux
     return toLabelg(get_basic_graph_label(nx_graph, graph_type))
+
+# Records a flamegraph for the worker process' entire execution.
+# Pass to the pool as initializer=_init_worker.
+# The pool must be closed manually, like this:
+#     pool.close()
+#     pool.join()
+# Otherwise, it won't be shutdown gracefully and the atexit
+# handler won't run.
+def _init_worker():
+    profiler = Profiler()
+    profiler.start()
+
+    def on_exit():
+        profiler.stop()
+        profiler.open_in_browser()
+    atexit.register(on_exit)
