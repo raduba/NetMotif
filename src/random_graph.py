@@ -1,4 +1,4 @@
-import networkx as nx
+import igraph as ig
 import streamlit as st
 from src.graph_with_subgraph import GraphWithSubgraph
 from src.graph_types import GraphType
@@ -15,20 +15,16 @@ def generate_random_graphs(mimicked_graph: GraphWithSubgraph, number_of_graphs) 
 
 def generate_random_graph(mimicked_graph: GraphWithSubgraph):
     if mimicked_graph.graph_type == GraphType.UNDIRECTED:
-            degree_sequence = [d for _, d in mimicked_graph.G.degree()]
-            random_nx_graph = nx.Graph(nx.configuration_model(degree_sequence))
+        random_graph = ig.Graph.Degree_Sequence(mimicked_graph.G.degree(), method="configuration")
     elif mimicked_graph.graph_type == GraphType.DIRECTED:
-        in_degree_sequence = [d for _, d in mimicked_graph.G.in_degree()]
-        out_degree_sequence = [d for _, d in mimicked_graph.G.out_degree()]
-        random_nx_graph = nx.DiGraph(
-            nx.directed_configuration_model(
-                in_degree_sequence, out_degree_sequence
-            )
+        random_graph = ig.Graph.Degree_Sequence(
+            mimicked_graph.G.outdegree(),
+            mimicked_graph.G.indegree(),
+            method="configuration",
         )
-    random_nx_graph.remove_edges_from(nx.selfloop_edges(random_nx_graph))
-    random_graph = GraphWithSubgraph(
+    random_graph.simplify()
+    return GraphWithSubgraph(
         graph_type=mimicked_graph.graph_type,
-        input=random_nx_graph,
+        input=random_graph,
         motif_size=mimicked_graph.motif_size,
     )
-    return random_graph

@@ -2,12 +2,11 @@
 Graph Class
 
 This class is responsible for graph generation, visualization, and\
-    rendering using NetworkX and Pyvis.
+    rendering using igraph and Pyvis.
 
 """
 
-from typing import List
-import networkx as nx
+import igraph as ig
 import os
 import io
 import streamlit as st
@@ -21,44 +20,56 @@ class Graph:
         self.graph_type = graph_type
         self.file = input
         self.G = None
+        # vertex ID -> node label
+        self.node_list = []
 
-        # build graph
-        if graph_type == GraphType.UNDIRECTED:
-            self.G = nx.Graph()
-        elif graph_type == GraphType.DIRECTED:
-            self.G = nx.DiGraph()
-
-        # if input is Graph or DiGraph handle differently
         if isinstance(input, UploadedFile) or isinstance(input, io.BytesIO):
             if input is not None:
-                bytes_data = io.StringIO(input.getvalue().decode("utf-8"))
-                data = bytes_data.readlines()
-                for line in data:
-                    nodes = line.strip().split()
-                    if len(nodes) == 2:
-                        self.G.add_edge(nodes[0], nodes[1])
+                lines = io.StringIO(input.getvalue().decode("utf-8")).readlines()
+                self.parse_graph(lines)
         elif isinstance(input, str):
             self.read_file(input)
-        else:
+        elif isinstance(input, ig.Graph):
             self.G = input
+            self.node_list = list(range(input.vcount()))
 
     def read_file(self, file_directory):
         with open(file_directory, 'r') as f:
-            file_content_edges = f.readlines()
-            for edge in file_content_edges:
-                nodes = edge.strip().split()
-                if len(nodes) == 2:
-                    self.G.add_edge(nodes[0], nodes[1])
+            self.parse_graph(f.readlines())
+
+
+    # Parses a graph from the given file lines into this object.
+    def parse_graph(self, lines):
+        self.node_list = []
+
+        # label -> vertex ID
+        node_map = {}
+        # (from, to)[]
+        edges = []
+        for line in lines:
+            parts = line.strip().split()
+            if len(parts) == 2:
+                src, dst = parts
+                if src not in node_map:
+                    node_map[src] = len(self.node_list)
+                    self.node_list.append(src)
+                if dst not in node_map:
+                    node_map[dst] = len(self.node_list)
+                    self.node_list.append(dst)
+
+                edges.append((node_map[src], node_map[dst]))
+
+        self.G = ig.Graph(n=len(self.node_list), edges=edges, directed=(self.graph_type == GraphType.DIRECTED))
 
     def get_graph_properties(self):
         if self.G is None:
             return {}
 
         return {
-            "Number of nodes": self.G.number_of_nodes(),
-            "Edges": list(self.G.edges()),
-            "Number of edges": self.G.number_of_edges(),
-            "Weight": self.G.size(),
+            "Number of nodes": self.G.vcount(),
+            "Edges": self.G.get_edgelist(),
+            "Number of edges": self.G.ecount(),
+            "Weight": self.G.ecount(),
         }
 
     '''
@@ -75,7 +86,7 @@ class Graph:
             nt = Network(directed=True)
         else:
             nt = Network()
-        nt.from_nx(self.G)
+        nt.from_nx(ig.Graph.to_networkx(self.G))
         nt.toggle_physics(True)  # add physic to graph
         nt.toggle_hide_edges_on_drag(True)
         #nt.show_buttons(filter_=["physics"])

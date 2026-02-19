@@ -6,10 +6,10 @@ class Subgraph(Graph):
     A graph of same size as motif. GraphWithSubgraphs --<*> Subgraphs
     """
 
-    def __init__(self, graph_type, input):
+    def __init__(self, graph_type, input, node_ids):
         super().__init__(graph_type, input)  # Call the parent's __init__
-        self.label = ""
-        self.basic_label = ""
+        # Original vertex IDs in the parent graph
+        self.node_ids = node_ids
 
     def __eq__(self, other):
         if isinstance(other, Subgraph):

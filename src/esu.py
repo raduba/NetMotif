@@ -1,6 +1,6 @@
 import time
 from typing import List
-import networkx as nx
+import igraph as ig
 import streamlit as st
 from src.subgraph import Subgraph
 from src.graph_types import GraphType
@@ -8,7 +8,7 @@ import src.label as lb
 
 
 class ESU:
-    def __init__(self, G: nx.Graph, size: int, graph_type: GraphType):
+    def __init__(self, G: ig.Graph, size: int, graph_type: GraphType):
         """
         Enumerates all unique subgraphs of a given motif size from the input
                 graph using the ESU algorithm.
@@ -16,12 +16,11 @@ class ESU:
         self.G = G
         self.size = size
         self.graph_type = graph_type
-        self.subgraph_list: List[nx.Graph] = []
+        # (ig.Graph, node_ids)[]
+        self.subgraph_list: List[tuple[ig.Graph, list[int]]] = []
         self.Subgraph_list: List[Subgraph] = []
         self.node_visited = set()
-        self.label_conversion_map = {}
-        self.nodes = list(self.G.nodes())
-        self.number_of_conversions = 0
+        self.nodes = list(range(self.G.vcount()))
 
         # Progress bar for subgraph enumeration
         progress_text = "ESU algorithm in progress. Please wait."
@@ -56,8 +55,8 @@ class ESU:
 
         # apply the d6 labels in parallel
         basic_labeling_start_time = time.perf_counter()
-        subgraphs = [Subgraph(graph_type=self.graph_type, input=s) for s in self.subgraph_list]
-        subgraphs_params = [(s, self.graph_type) for s in self.subgraph_list]
+        subgraphs = [Subgraph(graph_type=self.graph_type, input=sub, node_ids=nodes) for sub, nodes in self.subgraph_list]
+        subgraphs_params = [(sub, self.graph_type) for sub, _ in self.subgraph_list]
         basic_labels = lb.calculate_basic_labels(subgraphs_params)
         for s, basic_label in zip(subgraphs, basic_labels):
             s.basic_label = basic_label
@@ -82,10 +81,10 @@ class ESU:
         my_bar.empty()
 
     def esu_recursive_helper(
-        self, size: int, neighbors: set, node_list: list, subgraph_list: list, nodes_visited: set
+        self, size: int, neighbors: set[int], node_list: list[int], subgraph_list: list[tuple[ig.Graph, list[int]]], nodes_visited: set[int]
     ):
         if size == 1:
-            subgraph_list.append(self.G.subgraph(node_list))
+            subgraph_list.append((self.G.induced_subgraph(node_list), list(node_list)))
             return
 
         if not neighbors:
@@ -97,7 +96,7 @@ class ESU:
 
             # Efficiently get next neighbors
             next_neighbors = {n for n in neighbors if n not in nodes_visited}
-            for neighbor in nx.neighbors(self.G, node):
+            for neighbor in self.G.neighbors(node, mode=ig.OUT):
                 if neighbor not in nodes_visited:
                     next_neighbors.add(neighbor)
 
@@ -112,9 +111,7 @@ class ESU:
 
     def get_right_neighbors(self, node):
         # Retrieve neighbors that are "right" of the given node in the graph's index order
-        nodes_list = list(self.G.nodes)
-        node_index_in_g = nodes_list.index(node)
-        return (n for i, n in enumerate(self.G) if i > node_index_in_g and self.G.has_edge(node, n))
+        return [n for n in self.G.neighbors(node, mode=ig.OUT) if n > node]
 
     def get_subgraph_list(self):
         return self.Subgraph_list

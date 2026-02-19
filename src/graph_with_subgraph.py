@@ -1,10 +1,6 @@
-import networkx as nx
+import igraph as ig
 import os
-from io import StringIO
 import streamlit as st
-import streamlit.components.v1 as components
-from pyvis.network import Network
-import pandas as pd
 from src.graph_utils import Graph
 from src.subgraph import Subgraph
 from src.esu import ESU
@@ -26,7 +22,7 @@ class GraphWithSubgraph(Graph):
         # instantiation of Graph object
         super().__init__(graph_type, input)
         # remove self loops
-        self.G.remove_edges_from(nx.selfloop_edges(self.G))
+        self.G.simplify()
 
         # creating Subgraph list and dict
         start_time = time.perf_counter()
@@ -56,12 +52,12 @@ class GraphWithSubgraph(Graph):
                     visited.add(current)
                     component.add(current)
                     # Add all unvisited neighbors (in undirected graph)
-                    for neighbor in nx.all_neighbors(G, current):
+                    for neighbor in G.neighbors(current, mode=ig.ALL):
                         if neighbor not in visited:
                             stack.append(neighbor)
 
         # Iterate over all nodes in the graph
-        for node in G.nodes():
+        for node in range(G.vcount()):
             if node not in visited:
                 # Start a DFS for this unvisited node
                 component = set()
@@ -78,8 +74,8 @@ class GraphWithSubgraph(Graph):
         numberOfConversions = 0
         subgraph_list = []
         for i, component in enumerate(components_of_size_k):
-            nxgraph = G.subgraph(component)
-            sub = Subgraph(graph_type=graph_type, input=nxgraph)
+            node_ids = list(component)
+            sub = Subgraph(graph_type=graph_type, input=G.induced_subgraph(node_ids), node_ids=node_ids)
             d6 = lb.get_basic_graph_label(sub.G, graph_type)
             if d6 not in label_conversion_map:
                 numberOfConversions += 1
@@ -153,11 +149,11 @@ class GraphWithSubgraph(Graph):
             if label not in nodes_dictionary:
                 # fill in all node count as 0 for label
                 nodes_dictionary[label] = {}
-                for node in self.G:
+                for node in self.node_list:
                     nodes_dictionary[label][node] = 0
             # for every node in the subgraph add 1 to its label-node count
-            for node in subgraph.G.nodes:
-                nodes_dictionary[label][node] += 1
+            for node_id in subgraph.node_ids:
+                nodes_dictionary[label][self.node_list[node_id]] += 1
 
         # Write into file
         with open(subgraph_profile_output, "w") as file:
@@ -167,7 +163,7 @@ class GraphWithSubgraph(Graph):
             top_row += "\n"  # make space for the nodes and their count
             file.write(top_row)
             # each nodes count in its associated graph
-            for node in self.G:
+            for node in self.node_list:
                 line = f"{node:<10}"
                 for key in nodes_dictionary:
                     line += f"{nodes_dictionary[key][node]:<10}"
@@ -194,7 +190,7 @@ class GraphWithSubgraph(Graph):
         # Write into file
         with open(subgraph_collection_output, "w") as file:
             for subgraph in self.subgraph_list:
-                nodes = subgraph.G.nodes()
+                nodes = [self.node_list[i] for i in subgraph.node_ids]
                 line = ""
                 line += subgraph.get_label() + "[" + ", ".join([str(x) for x in nodes]) + "] \n"
                 file.write(line)

@@ -1,5 +1,5 @@
 import time
-import networkx as nx
+import igraph as ig
 import os
 import subprocess
 import streamlit as st
@@ -11,7 +11,7 @@ from multiprocessing import Pool
 from src.graph_types import GraphType
 
 
-def print_labelg(graph_type, subgraph_list: list[nx.Graph]):
+def print_labelg(graph_type, subgraph_list: list[ig.Graph]):
     """
     Takes in esu subgraph list and outputs labels into a .txt file.
     """
@@ -49,19 +49,19 @@ def print_labelg(graph_type, subgraph_list: list[nx.Graph]):
     return labelg_output_file
 
 
-def graph6(graph: nx.Graph) -> str:
+def graph6(graph: ig.Graph) -> str:
     """
     Convert a subgraph into graph6 format.
 
     Parameters:
-        graph (nx.Graph): A NetworkX graph.
+        graph (ig.Graph): An igraph graph.
 
     Returns:
         str: The graph6 encoded string.
     """
     # Step 1: Compute N(n), the graph size character
-    graph_size = graph.order()  # number of nodes in the graph
-    vertices = list(graph.nodes())
+    graph_size = graph.vcount()  # number of nodes in the graph
+    vertices = list(range(graph_size))
     n = len(vertices)
 
     if graph_size == 0:
@@ -78,7 +78,7 @@ def graph6(graph: nx.Graph) -> str:
     adj_matrix = [[0 for _ in range(n)] for _ in range(n)]
     for r in range(len(adj_matrix)):
         for c in range(len(adj_matrix[r])):
-            if graph.has_edge(vertices[r], vertices[c]):
+            if graph.are_adjacent(vertices[r], vertices[c]):
                 adj_matrix[r][c] = 1
     for col in range(len(adj_matrix[0])):
         for row in range(col):
@@ -97,19 +97,19 @@ def graph6(graph: nx.Graph) -> str:
     return N + R
 
 
-def digraph6(graph: nx.DiGraph) -> str:
+def digraph6(graph: ig.Graph) -> str:
     """
     Convert a directed subgraph into digraph6 format.
 
     Parameters:
-        graph (nx.Graph): A NetworkX graph.
+        graph (ig.Graph): An igraph graph.
 
     Returns:
         str: The digraph6 encoded string.
     """
     # Step 1: Compute N(n), the graph size character
-    graph_size = graph.order()
-    vertices = list(graph.nodes)
+    graph_size = graph.vcount()
+    vertices = list(range(graph_size))
 
     if graph_size == 0:
         return ""  # empty graph
@@ -124,7 +124,7 @@ def digraph6(graph: nx.DiGraph) -> str:
     bit_vector = []
     for r in vertices:
         for c in vertices:
-            if graph.has_edge(r, c):
+            if graph.are_adjacent(r, c):
                 bit_vector.append(1)
             else:
                 bit_vector.append(0)
@@ -203,27 +203,27 @@ def collect_labelg(labels: list[str]) -> list[str]:
     return [canonical_labels[label] for label in labels]
 
 
-def get_basic_graph_label(nx_graph: nx.Graph, graph_type: GraphType) -> str:
+def get_basic_graph_label(graph: ig.Graph, graph_type: GraphType) -> str:
     """
     Label a graph in either graph6 (undirected) or digraph6 (directed) format.
     """
     if graph_type == GraphType.UNDIRECTED:
-        return graph6(nx_graph)
+        return graph6(graph)
     if graph_type == GraphType.DIRECTED:
-        return digraph6(nx_graph)
+        return digraph6(graph)
 
 
-def get_graph_label(nx_graph: nx.Graph, graph_type: GraphType) -> str:
+def get_graph_label(graph: ig.Graph, graph_type: GraphType) -> str:
     """
     Label a graph in labelg format.
     """
     # for linux
-    return toLabelg(get_basic_graph_label(nx_graph, graph_type))
+    return toLabelg(get_basic_graph_label(graph, graph_type))
 
 
 def _apply_basic_label_worker(args):
     """
-    Worker arguments of type (nx.Graph | nx.DiGraph, GraphType) so we can compute the subgraph
+    Worker arguments of type (ig.Graph, GraphType) so we can compute the subgraph
     labels in parallel
     """
     g, graph_type = args
