@@ -23,6 +23,7 @@ class ESU:
         self._subgraph_list: List[Subgraph] = []
         self._enumerate_subgraphs: Dict[Subgraph, int] = {}
         self.nodes = list(self.G.nodes())
+        self._node_indices = {n: i for i, n in enumerate(self.nodes)}
         self.number_of_conversions = 0
 
         subgraph_count: dict[str, List] = {}
@@ -129,8 +130,8 @@ class ESU:
 
     def get_right_neighbors(self, node):
         # Retrieve neighbors that are "right" of the given node in the graph's index order
-        node_index_in_g = self.nodes.index(node)
-        return (n for i, n in enumerate(self.G) if i > node_index_in_g and self.G.has_edge(node, n))
+        node_index_in_g = self._node_indices[node]
+        return (w for w in self.G.neighbors(node) if self._node_indices[w] > node_index_in_g)
 
     def get_subgraph_list(self):
         return self._subgraph_list
