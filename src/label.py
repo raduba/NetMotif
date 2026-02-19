@@ -55,19 +55,19 @@ def graph6(graph: nx.Graph) -> str:
     return N + R
 
 
-def g6(graph: nx.Graph) -> str:
+def g6(graph: nx.Graph, sg_nodes: list[int]) -> str:
     """
     Convert a subgraph into graph6 format without using intermediary strings and adjacency matrix.
 
     Parameters:
-        graph (nx.Graph): A NetworkX graph.
+        graph (nx.Graph): The parent graph.
+        sg_nodes (list[int]): A list of nodes in the parent which form a subgraph.
 
     Returns:
         str: The graph6 encoded string.
     """
     # Step 1: Compute N(n), the graph size character
-    vertices = list(graph.nodes())
-    n = len(vertices)
+    n = len(sg_nodes)
 
     current_group = bit_count = 0
     bit_vector = bytearray()
@@ -79,7 +79,7 @@ def g6(graph: nx.Graph) -> str:
     # For undirected: read upper triangle of the matrix, column by column
     for c in range(n):
         for r in range(c):
-            if graph.has_edge(vertices[r], vertices[c]):
+            if graph.has_edge(sg_nodes[r], sg_nodes[c]):
                 current_group = (current_group << 1) | 1
             else:
                 current_group = current_group << 1
@@ -100,19 +100,19 @@ def g6(graph: nx.Graph) -> str:
     return bit_vector.decode("ascii")
 
 
-def digraph6(graph: nx.DiGraph) -> str:
+def digraph6(graph: nx.DiGraph, sg_nodes: list[int]) -> str:
     """
     Convert a directed subgraph into digraph6 format.
 
     Parameters:
-        graph (nx.Graph): A NetworkX graph.
+        graph (nx.Graph): The parent graph.
+        sg_nodes (list[int]): A list of nodes in the parent which form a subgraph.
 
     Returns:
         str: The digraph6 encoded string.
     """
     # Step 1: Compute N(n), the graph size character
-    graph_size = graph.order()
-    vertices = list(graph.nodes)
+    graph_size = len(sg_nodes)
 
     if graph_size == 0:
         return ""  # empty graph
@@ -125,8 +125,8 @@ def digraph6(graph: nx.DiGraph) -> str:
     # adjacency matrix
     # For directed: read the matrix row by row
     bit_vector = []
-    for r in vertices:
-        for c in vertices:
+    for r in sg_nodes:
+        for c in sg_nodes:
             if graph.has_edge(r, c):
                 bit_vector.append(1)
             else:
@@ -206,22 +206,22 @@ def collect_labelg(labels: list[str]) -> list[str]:
     return [canonical_labels[label] for label in labels]
 
 
-def get_basic_graph_label(nx_graph: nx.Graph, graph_type: GraphType) -> str:
+def get_basic_graph_label(nx_graph: nx.Graph, sg_nodes: list[int], graph_type: GraphType) -> str:
     """
     Label a graph in either graph6 (undirected) or digraph6 (directed) format.
     """
     if graph_type == GraphType.UNDIRECTED:
-        return g6(nx_graph)
+        return g6(nx_graph, sg_nodes)
     if graph_type == GraphType.DIRECTED:
-        return digraph6(nx_graph)
+        return digraph6(nx_graph, sg_nodes)
 
 
-def get_graph_label(nx_graph: nx.Graph, graph_type: GraphType) -> str:
+def get_graph_label(nx_graph: nx.Graph, sg_nodes: list[int], graph_type: GraphType) -> str:
     """
     Label a graph in labelg format.
     """
     # for linux
-    return toLabelg(get_basic_graph_label(nx_graph, graph_type))
+    return toLabelg(get_basic_graph_label(nx_graph, sg_nodes, graph_type))
 
 # Records a flamegraph for the worker process' entire execution.
 # Pass to the pool as initializer=_init_worker.

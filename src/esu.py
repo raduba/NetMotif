@@ -36,13 +36,13 @@ class ESU:
 
         for sg in self.esu():
             self._total_subgraphs += 1
-            g6 = lb.get_basic_graph_label(sg, self.graph_type)
+            g6 = lb.get_basic_graph_label(G, sg, self.graph_type)
 
             if g6 in subgraph_count:
                 subgraph_count[g6][0] += 1
             else:
                 # keep one subgraph / g6 so we can show it in the UI
-                s = Subgraph(graph_type=self.graph_type, input=sg, basic_label=g6)
+                s = Subgraph(graph_type=self.graph_type, input=G.subgraph(sg), basic_label=g6)
                 subgraph_count[g6] = [1, s]
                 # subgraph_list keeps the list of unique subgraphs using non-canonical labels,
                 # so only one subgraphs will be stored / g6 label
@@ -85,7 +85,10 @@ class ESU:
 
         my_bar.empty()
 
-    def esu(self) -> Generator[nx.Graph]:
+    # Returns the node list of each subgraph in the parent graph.
+    # Each yield returns the same list, so if it needs to be used across
+    # yield points, it MUST be copied.
+    def esu(self) -> Generator[list[int]]:
         """
         Return subgraphs in a generator so that we don't run out of memory for k > 5, when we can
         have tens of millions of subgraphs on 1000 nodes and edges graphs
@@ -103,10 +106,10 @@ class ESU:
             )
 
     def _esu_helper(
-        self, size: int, neighbors: set, node_list: list, nodes_visited: set, root_index: int
-    ) -> Generator[nx.Graph]:
+        self, size: int, neighbors: set, node_list: list[int], nodes_visited: set, root_index: int
+    ) -> Generator[list[int]]:
         if size == 1:
-            yield self.G.subgraph(node_list)
+            yield node_list
             return
 
         if not neighbors:
