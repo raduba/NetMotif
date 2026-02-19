@@ -1,7 +1,14 @@
+# pyinstrument doesn't play well with multithreading, this
+# prevents it from messing with spawned processes.
+# It WILL make it slower, though.
+import multiprocessing
+multiprocessing.set_start_method("spawn", force=True)
+
 import streamlit as st
 import time
 import os
 import io
+from pyinstrument import Profiler
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 from src.graph_with_subgraph import GraphWithSubgraph
 from src.graph_types import GraphType
@@ -159,7 +166,9 @@ def main():
         st.session_state["nemo_count_option"] = nemo_count_type
 
         start_time = time.time()
-        form_callback(start_time)
+        with Profiler() as pr:
+            form_callback(start_time)
+        pr.open_in_browser()
 
     st.markdown("<br>", unsafe_allow_html=True)
 

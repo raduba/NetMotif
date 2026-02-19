@@ -4,6 +4,9 @@ import os
 import subprocess
 import streamlit as st
 from collections import defaultdict
+import atexit
+from pyinstrument import Profiler
+import multiprocessing
 from multiprocessing import Pool
 from src.graph_types import GraphType
 
@@ -226,7 +229,25 @@ def _apply_basic_label_worker(args):
     g, graph_type = args
     return get_basic_graph_label(g, graph_type)
 
+# Records a flamegraph for the worker process' entire execution.
+# The process name check is a bit dubious, but works for debugging.
+def _init_worker():
+    return
+
+    profiler = Profiler()
+    profiler.start()
+
+    def on_exit():
+        profiler.stop()
+        profiler.open_in_browser()
+    atexit.register(on_exit)
+
 
 def calculate_basic_labels(subgraphs):
-    with Pool(processes=8) as p:
-        return p.map(_apply_basic_label_worker, subgraphs)
+    pool = Pool(processes=8, initializer=_init_worker)
+    result = pool.map(_apply_basic_label_worker, subgraphs)
+    # Must be done manually, otherwise the process doesn't
+    # end gracefully and atexit doesn't run.
+    pool.close()
+    pool.join()
+    return result
