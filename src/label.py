@@ -30,14 +30,7 @@ def print_labelg(graph_type, subgraph_list: list[nx.Graph]):
             file.writelines(label)
 
     # Convert to labelg
-    label_g = "./NetMotif/labelg"  # Name of the executable
-
-    # Check if the labelg executable exists in the root directory
-    if os.path.isfile(label_g):
-        os.chmod(label_g, 0o755)  # Ensure it is executable
-    else:
-        st.write("labelg exists: False")
-        return
+    label_g = "labelg"  # Name of the executable
 
     labelg_output_file = os.path.join(output_dir, "labelg_output.txt")
     try:
@@ -148,13 +141,7 @@ def digraph6(graph: nx.DiGraph) -> str:
 
 
 def toLabelg(label: str):
-    label_g = "./labelg"  # Name of the executable
-    # Check if the labelg executable exists in the root directory
-    if os.path.isfile(label_g):
-        os.chmod(label_g, 0o755)  # Ensure it is executable
-    else:
-        st.write("labelg exists: False")
-        return label
+    label_g = "labelg"  # Name of the executable
 
     try:
         result = subprocess.run(
@@ -191,11 +178,7 @@ def collect_labelg(labels: list[str]) -> list[str]:
     output results.
     """
     start_time = time.perf_counter()
-    label_g = "./labelg"
-    if os.path.isfile(label_g):
-        os.chmod(label_g, 0o755)
-    else:
-        raise RuntimeError("labelg executable not found")
+    label_g = "labelg"
 
     unique_labels = list(set(labels))
     labelg_input = "\n".join(unique_labels)
