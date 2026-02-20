@@ -54,6 +54,7 @@ def graph6(graph: nx.Graph) -> str:
         R += chr(group_value + 63)
     return N + R
 
+g6_cache = dict()
 
 def g6(graph: nx.Graph, sg_nodes: list[int]) -> str:
     """
@@ -69,36 +70,45 @@ def g6(graph: nx.Graph, sg_nodes: list[int]) -> str:
     # Step 1: Compute N(n), the graph size character
     n = len(sg_nodes)
 
-    current_group = bit_count = 0
-    bit_vector = bytearray()
-    N = n + 63  # add 63 to the number of nodes
-    bit_vector.append(N)
+    bit_count = 0
+    # This has two imaginary leading zeros.
+    bits = n + 63 # add 63 to the number of nodes
+    num_bytes = 1
 
     # Step 2: Compute R(x). Create bit vector from the upper triangle of the
     # adjacency matrix
     # For undirected: read upper triangle of the matrix, column by column
     for c in range(n):
         for r in range(c):
+            if bit_count == 0:
+                # This section needs two leading zeros.
+                bits <<= 2
+
             if graph.has_edge(sg_nodes[r], sg_nodes[c]):
-                current_group = (current_group << 1) | 1
+                bits = (bits << 1) | 1
             else:
-                current_group = current_group << 1
+                bits = bits << 1
 
             bit_count += 1
 
             if bit_count == 6:
-                bit_vector.append(current_group + 63)
-                current_group = 0
+                bits += 63
+                num_bytes += 1
                 bit_count = 0
 
     # Step 3: Pad bit vector with zeros to make its length a multiple of 6
     if bit_count > 0:
-        current_group = current_group << (6 - bit_count)
-        bit_vector.append(current_group + 63)
+        bits = bits << (6 - bit_count)
+        bits += 63
+        num_bytes += 1
 
-    # Step 4: Convert each group of 6 bits into an ASCII character for encoding
-    return bit_vector.decode("ascii")
+    if bits not in g6_cache:
+        # Step 4: Convert each group of 6 bits into an ASCII character for encoding
+        g6_cache[bits] = bits.to_bytes(num_bytes, "big").decode("ascii")
 
+    return g6_cache[bits]
+
+d6_cache = dict()
 
 def digraph6(graph: nx.DiGraph, sg_nodes: list[int]) -> str:
     """
@@ -119,31 +129,42 @@ def digraph6(graph: nx.DiGraph, sg_nodes: list[int]) -> str:
     elif graph_size == 1:
         return ""  # single-node graph
 
-    N = chr(graph_size + 63)
+    bit_count = 0
+    # This has two imaginary leading zeros.
+    bits = graph_size + 63
+    num_bytes = 1
 
-    # Step 2: Compute R(x). Create bit vector from the upper triangle of the
-    # adjacency matrix
+    # Step 2: Compute R(x). Create bit vector from the full adjacency matrix
     # For directed: read the matrix row by row
-    bit_vector = []
     for r in sg_nodes:
         for c in sg_nodes:
+            if bit_count == 0:
+                # This section needs two leading zeros.
+                bits <<= 2
+
             if graph.has_edge(r, c):
-                bit_vector.append(1)
+                bits = (bits << 1) | 1
             else:
-                bit_vector.append(0)
+                bits = bits << 1
+
+            bit_count += 1
+
+            if bit_count == 6:
+                bits += 63
+                num_bytes += 1
+                bit_count = 0
 
     # Step 3: Pad bit vector with zeros to make its length a multiple of 6
-    while len(bit_vector) % 6 != 0:
-        bit_vector.append(0)
+    if bit_count > 0:
+        bits = bits << (6 - bit_count)
+        bits += 63
+        num_bytes += 1
 
-    # Step 4: Convert each group of 6 bits to an ASCII character for encoding
-    R = ""
-    for i in range(0, len(bit_vector), 6):
-        group = bit_vector[i : i + 6]
-        group_value = sum((bit << (5 - idx)) for idx, bit in enumerate(group))
-        R += chr(group_value + 63)
+    if bits not in d6_cache:
+        # Step 4: Convert each group of 6 bits into an ASCII character for encoding
+        d6_cache[bits] = "&" + bits.to_bytes(num_bytes, "big").decode("ascii")
 
-    return chr(38) + N + R
+    return d6_cache[bits]
 
 
 def toLabelg(label: str):
