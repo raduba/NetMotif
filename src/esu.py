@@ -90,19 +90,20 @@ class ESU:
         Return subgraphs in a generator so that we don't run out of memory for k > 5, when we can
         have tens of millions of subgraphs on 1000 nodes and edges graphs
         """
-        node_visited = set()
         for node in self.nodes:
             node_list = [node]
-            node_visited.add(node)
+            node_visited = {node}
+            node_index = self._node_indices[node]
             yield from self._esu_helper(
                 self.size,
                 set(self.get_right_neighbors(node)),
                 node_list,
                 node_visited,
+                node_index
             )
 
     def _esu_helper(
-        self, size: int, neighbors: set, node_list: list, nodes_visited: set
+        self, size: int, neighbors: set, node_list: list, nodes_visited: set, root_index: int
     ) -> Generator[nx.Graph]:
         if size == 1:
             yield self.G.subgraph(node_list)
@@ -116,12 +117,13 @@ class ESU:
             nodes_visited.add(node)
 
             # Efficiently get next neighbors
-            next_neighbors = {n for n in neighbors if n not in nodes_visited}
-            for neighbor in nx.neighbors(self.G, node):
-                if neighbor not in nodes_visited:
-                    next_neighbors.add(neighbor)
+            new_neighbors = {
+                n for n in self.G.neighbors(node) if self._node_indices[n] > root_index
+            }
+            next_neighbors = neighbors.union(new_neighbors)
+            next_neighbors.difference_update(nodes_visited)
 
-            yield from self._esu_helper(size - 1, next_neighbors, node_list, nodes_visited)
+            yield from self._esu_helper(size - 1, next_neighbors, node_list, nodes_visited, root_index)
 
             node_list.pop()
 
