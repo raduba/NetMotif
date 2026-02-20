@@ -1,19 +1,24 @@
 import networkx as nx
-import streamlit as st
 from src.graph_with_subgraph import GraphWithSubgraph
 from src.graph_types import GraphType
+from src.progress import ProgressUpdate, Logger, ProgressState
 
-def generate_random_graphs(mimicked_graph: GraphWithSubgraph, number_of_graphs) -> list[GraphWithSubgraph]:
-    progress_text = "Random graph generation in progress. Please wait."
-    my_bar = st.progress(0, text=progress_text)
+def generate_random_graphs(mimicked_graph: GraphWithSubgraph, number_of_graphs, progress: ProgressUpdate = None, logger: Logger = None) -> list[GraphWithSubgraph]:
+    if progress:
+        progress(ProgressState.RANDOM, 0)
+
     random_graphs: list[GraphWithSubgraph] = []
     for i in range(number_of_graphs):
-        random_graphs.append(generate_random_graph(mimicked_graph))
-        my_bar.progress(i/st.session_state['number_of_random_graphs'], text=progress_text)
-    my_bar.empty()
+        random_graphs.append(generate_random_graph(mimicked_graph, progress, logger))
+        if progress:
+            progress(ProgressState.RANDOM, float(i + 1)/float(number_of_graphs))
+
+    if progress:
+        progress(ProgressState.RANDOM, 1)
+
     return random_graphs
 
-def generate_random_graph(mimicked_graph: GraphWithSubgraph):
+def generate_random_graph(mimicked_graph: GraphWithSubgraph, progress: ProgressUpdate = None, logger: Logger = None):
     if mimicked_graph.graph_type == GraphType.UNDIRECTED:
             degree_sequence = [d for _, d in mimicked_graph.G.degree()]
             random_nx_graph = nx.Graph(nx.configuration_model(degree_sequence))
@@ -30,5 +35,7 @@ def generate_random_graph(mimicked_graph: GraphWithSubgraph):
         graph_type=mimicked_graph.graph_type,
         input=random_nx_graph,
         motif_size=mimicked_graph.motif_size,
+        progress=progress,
+        logger=logger
     )
     return random_graph

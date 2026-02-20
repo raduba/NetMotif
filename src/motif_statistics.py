@@ -1,13 +1,11 @@
 from src.graph_with_subgraph import GraphWithSubgraph
 from src.subgraph import Subgraph
-import math
 import scipy.stats
 import pandas as pd
-import streamlit as st
-import streamlit.components.v1 as components
-
 
 def draw_statistics(subgraph_table: dict):
+    import streamlit as st
+
     motif_table: dict = {}
     for key in subgraph_table.keys():
         new_key = ""

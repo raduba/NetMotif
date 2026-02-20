@@ -1,15 +1,15 @@
 import time
 from typing import Dict, Generator, List
 import networkx as nx
-import streamlit as st
 from line_profiler import LineProfiler
+from src.progress import ProgressUpdate, Logger, ProgressState
 from src.subgraph import Subgraph
 from src.graph_types import GraphType
 import src.label as lb
 
 
 class ESU:
-    def __init__(self, G: nx.Graph, size: int, graph_type: GraphType):
+    def __init__(self, G: nx.Graph, size: int, graph_type: GraphType, progress: ProgressUpdate = None, logger: Logger = None):
         """
         Enumerates all unique subgraphs of a given motif size from the input
                 graph using the ESU algorithm.
@@ -31,8 +31,8 @@ class ESU:
         self._total_subgraphs = 0
 
         # Progress bar for subgraph enumeration
-        progress_text = "ESU algorithm in progress. Please wait."
-        my_bar = st.progress(0, text=progress_text)
+        if progress:
+            progress(ProgressState.ESU, 0)
         start_time = time.perf_counter()
 
         lp = LineProfiler()
@@ -54,23 +54,20 @@ class ESU:
                 # not needed and downstream code should be rafactored so that it does not use it
                 self._subgraph_list.append(s)
 
-        my_bar.empty()
-
         lp.disable()
         lp.print_stats()
 
         esu_time = time.perf_counter()
-        print(f"enumerated {self._total_subgraphs} in {(esu_time - start_time):.6f} seconds")
-        st.write(
-            f"ESU.esu time to find {self._total_subgraphs} subgraphs: {(esu_time - start_time):.6f} seconds"
-        )
+        if progress:
+            progress(ProgressState.ESU, 1)
+        if logger:
+            logger(
+                f"ESU.esu time to find {self._total_subgraphs} subgraphs: {(esu_time - start_time):.6f} seconds"
+            )
 
         # Progress bar for labeling subgraphs
-        progress_text = "Labeling algorithm in progress. Please wait."
-        my_bar = st.progress(0, text=progress_text)
-
-        progress_text = "Canonical label translation in progress. Please wait."
-        my_bar.progress(0, text=progress_text)
+        if progress:
+            progress(ProgressState.LABELING, 0)
 
         labelg_start_time = time.perf_counter()
 
@@ -78,7 +75,10 @@ class ESU:
         subgraph_labels = list(subgraph_count.keys())
         canonical_labels = lb.collect_labelg(subgraph_labels)
 
-        st.write(f"ESU.labelg time: {(time.perf_counter() - labelg_start_time):.6f} seconds")
+        if progress:
+            progress(ProgressState.LABELING, 1)
+        if logger:
+            logger(f"ESU.labelg time: {(time.perf_counter() - labelg_start_time):.6f} seconds")
 
         for matched_label, canonical_label in zip(subgraph_labels, canonical_labels):
             matched_count, matched_subgraph = subgraph_count[matched_label]
@@ -90,8 +90,6 @@ class ESU:
                 enumerate_subgraphs[matched_subgraph] = matched_count
 
         self._enumerate_subgraphs = enumerate_subgraphs
-
-        my_bar.empty()
 
     # Returns the node list of each subgraph in the parent graph.
     # Each yield returns the same list, so if it needs to be used across

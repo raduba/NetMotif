@@ -6,13 +6,9 @@ This class is responsible for graph generation, visualization, and\
 
 """
 
-from typing import List
 import networkx as nx
 import os
 import io
-import streamlit as st
-import streamlit.components.v1 as components
-from streamlit.runtime.uploaded_file_manager import UploadedFile
 from pyvis.network import Network
 from src.graph_types import GraphType
 
@@ -29,7 +25,7 @@ class Graph:
             self.G = nx.DiGraph()
 
         # if input is Graph or DiGraph handle differently
-        if isinstance(input, UploadedFile) or isinstance(input, io.BytesIO):
+        if isinstance(input, io.BytesIO):
             if input is not None:
                 bytes_data = io.StringIO(input.getvalue().decode("utf-8"))
                 data = bytes_data.readlines()
@@ -70,6 +66,8 @@ class Graph:
     '''
 
     def draw_graph(self, output_file_name = "nx.html"):
+        import streamlit.components.v1 as components
+
         output_dir = "drawings"
         if self.graph_type == GraphType.DIRECTED:
             nt = Network(directed=True)

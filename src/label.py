@@ -1,8 +1,6 @@
 import time
 import networkx as nx
-import os
 import subprocess
-import streamlit as st
 from src.graph_types import GraphType
 from pyinstrument import Profiler
 import atexit
@@ -166,36 +164,6 @@ def digraph6(graph: nx.DiGraph, sg_nodes: list[int]) -> str:
 
     return d6_cache[bits]
 
-
-def toLabelg(label: str):
-    label_g = "labelg"  # Name of the executable
-
-    try:
-        result = subprocess.run(
-            [label_g],
-            input=label + "\n",
-            text=True,
-            capture_output=True,
-            check=True,
-        )
-
-        # if subprocess runs correctly
-        if result.returncode == 0:
-            labelg_output = result.stdout.rstrip()
-        else:
-            st.write(
-                "Subprocess failed with return code:",
-                result.returncode,
-            )
-            st.error(result.stderr)
-
-    except subprocess.CalledProcessError as e:
-        st.write("error running labelg:")
-        st.write(e.stderr)
-
-    return labelg_output
-
-
 def collect_labelg(labels: list[str]) -> list[str]:
     """
     Collect the canonical label for all the labels using only one labelg process, instead of
@@ -236,13 +204,6 @@ def get_basic_graph_label(nx_graph: nx.Graph, sg_nodes: list[int], graph_type: G
     if graph_type == GraphType.DIRECTED:
         return digraph6(nx_graph, sg_nodes)
 
-
-def get_graph_label(nx_graph: nx.Graph, sg_nodes: list[int], graph_type: GraphType) -> str:
-    """
-    Label a graph in labelg format.
-    """
-    # for linux
-    return toLabelg(get_basic_graph_label(nx_graph, sg_nodes, graph_type))
 
 # Records a flamegraph for the worker process' entire execution.
 # Pass to the pool as initializer=_init_worker.

@@ -2,6 +2,9 @@
 # prevents it from messing with spawned processes.
 # It WILL make it slower, though.
 import multiprocessing
+
+from src.progress import create_scoped_progress
+
 multiprocessing.set_start_method("spawn", force=True)
 
 import streamlit as st
@@ -36,11 +39,16 @@ def form_callback(start_time):
         st.warning("Please select a number of random graphs between 5-100.")
         return
 
+    progress = create_scoped_progress()
+    logger = lambda x: st.write(x)
+
     # create graph from file
     G = GraphWithSubgraph(
         graph_type=st.session_state["graph_type"],
         input=st.session_state["uploaded_file"],
         motif_size=st.session_state["motif_size"],
+        progress=progress,
+        logger=logger,
     )
 
     # display graph properties
@@ -61,7 +69,7 @@ def form_callback(start_time):
         G.draw_subgraph()
 
     # Generate random graphs
-    random_graphs = rg.generate_random_graphs(G, st.session_state["number_of_random_graphs"])
+    random_graphs = rg.generate_random_graphs(G, st.session_state["number_of_random_graphs"], progress=progress, logger=logger)
 
     stats = stat.process_statistics(G, random_graphs)
 
