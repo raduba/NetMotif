@@ -101,8 +101,9 @@ class ESU:
         Return subgraphs in a generator so that we don't run out of memory for k > 5, when we can
         have tens of millions of subgraphs on 1000 nodes and edges graphs
         """
+        node_list = [None] * self.size
         for node in self.nodes:
-            node_list = [node]
+            node_list[self.size - 1] = node
             node_visited = {node}
             node_index = self._node_indices[node]
             yield from self._esu_helper(
@@ -124,7 +125,8 @@ class ESU:
             return
 
         for node in neighbors:
-            node_list.append(node)
+            # -2 because we're setting our child, not ourselves.
+            node_list[size - 2] = node
             nodes_visited.add(node)
 
             # Efficiently get next neighbors
@@ -132,8 +134,6 @@ class ESU:
             next_neighbors.update(n for n in self.G._adj[node] if self._node_indices[n] > root_index and n not in nodes_visited)
 
             yield from self._esu_helper(size - 1, next_neighbors, node_list, nodes_visited, root_index)
-
-            node_list.pop()
 
         # Ensure we discard nodes from visited set after recursion
         nodes_visited.difference_update(neighbors)
