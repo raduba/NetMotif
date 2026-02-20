@@ -5,3 +5,4 @@ scipy>=1.13.1
 pandas>=2.2.3
 streamlit>=1.39
 pyinstrument
+line-profiler>=5.0

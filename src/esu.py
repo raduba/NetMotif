@@ -2,6 +2,7 @@ import time
 from typing import Dict, Generator, List
 import networkx as nx
 import streamlit as st
+from line_profiler import LineProfiler
 from src.subgraph import Subgraph
 from src.graph_types import GraphType
 import src.label as lb
@@ -34,6 +35,10 @@ class ESU:
         my_bar = st.progress(0, text=progress_text)
         start_time = time.perf_counter()
 
+        lp = LineProfiler()
+        lp.add_function(self._esu_helper)
+        lp.enable()
+
         for sg in self.esu():
             self._total_subgraphs += 1
             g6 = lb.get_basic_graph_label(G, sg, self.graph_type)
@@ -50,6 +55,9 @@ class ESU:
                 self._subgraph_list.append(s)
 
         my_bar.empty()
+
+        lp.disable()
+        lp.print_stats()
 
         esu_time = time.perf_counter()
         print(f"enumerated {self._total_subgraphs} in {(esu_time - start_time):.6f} seconds")
