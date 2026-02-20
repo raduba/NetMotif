@@ -128,11 +128,8 @@ class ESU:
             nodes_visited.add(node)
 
             # Efficiently get next neighbors
-            new_neighbors = {
-                n for n in self.G.neighbors(node) if self._node_indices[n] > root_index
-            }
-            next_neighbors = neighbors.union(new_neighbors)
-            next_neighbors.difference_update(nodes_visited)
+            next_neighbors = {n for n in neighbors if n not in nodes_visited}
+            next_neighbors.update(n for n in self.G._adj[node] if self._node_indices[n] > root_index and n not in nodes_visited)
 
             yield from self._esu_helper(size - 1, next_neighbors, node_list, nodes_visited, root_index)
 

@@ -84,7 +84,7 @@ def g6(graph: nx.Graph, sg_nodes: list[int]) -> str:
                 # This section needs two leading zeros.
                 bits <<= 2
 
-            if graph.has_edge(sg_nodes[r], sg_nodes[c]):
+            if sg_nodes[c] in graph._adj[sg_nodes[r]]:
                 bits = (bits << 1) | 1
             else:
                 bits = bits << 1
