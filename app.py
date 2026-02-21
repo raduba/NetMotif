@@ -69,7 +69,7 @@ def form_callback(start_time):
         G.draw_subgraph()
 
     # Generate random graphs
-    random_graphs = rg.generate_random_graphs(G, st.session_state["number_of_random_graphs"], progress=progress, logger=logger)
+    random_graphs = rg.generate_random_graphs(G, st.session_state["motif_size"], st.session_state["number_of_random_graphs"], progress=progress, logger=logger)
 
     stats = stat.process_statistics(G, random_graphs)
 
