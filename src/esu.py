@@ -13,6 +13,10 @@ class ESU:
                 graph using the ESU algorithm.
         """
         self.G = G
+        self.G_undirected = (
+            G if graph_type == GraphType.UNDIRECTED
+            else G.to_undirected(as_view=True)
+        )
         self.size = size
         self.graph_type = graph_type
         self._enumerate_subgraphs: Dict[Subgraph, int] = {}
@@ -95,7 +99,7 @@ class ESU:
 
             # Efficiently get next neighbors
             new_neighbors = {
-                n for n in self.G.neighbors(node) if self._node_indices[n] > root_index
+                n for n in self.G_undirected.neighbors(node) if self._node_indices[n] > root_index
             }
             next_neighbors = neighbors.union(new_neighbors)
             next_neighbors.difference_update(nodes_visited)
@@ -110,7 +114,10 @@ class ESU:
     def get_right_neighbors(self, node):
         # Retrieve neighbors that are "right" of the given node in the graph's index order
         node_index_in_g = self._node_indices[node]
-        return (w for w in self.G.neighbors(node) if self._node_indices[w] > node_index_in_g)
+        return (
+            w for w in self.G_undirected.neighbors(node)
+            if self._node_indices[w] > node_index_in_g
+        )
 
     def get_enumerated_subgraphs(self) -> Dict[Subgraph, int]:
         return self._enumerate_subgraphs
