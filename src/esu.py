@@ -1,7 +1,6 @@
 import time
-from typing import Dict, Generator, List
+from typing import Dict, Generator, List, Tuple
 import networkx as nx
-from src.subgraph import Subgraph
 from src.graph_types import GraphType
 import src.label as lb
 
@@ -19,7 +18,8 @@ class ESU:
         )
         self.size = size
         self.graph_type = graph_type
-        self._enumerate_subgraphs: Dict[Subgraph, int] = {}
+        # canonical label -> (count, subgraph_nodes)
+        self._enumerate_subgraphs: Dict[str, Tuple[int, List]] = {}
         self.nodes = list(self.G.nodes())
         self._node_indices = {n: i for i, n in enumerate(self.nodes)}
 
@@ -29,7 +29,7 @@ class ESU:
 
         start_time = time.perf_counter()
 
-        for sg_nodes in self.esu():
+        for sg_nodes in self._esu():
             self._total_subgraphs += 1
             g6 = lb.basic_graph_label(self.G, sg_nodes, self.graph_type)
 
@@ -48,7 +48,6 @@ class ESU:
 
         labelg_start_time = time.perf_counter()
 
-        # canonical label -> [count, Subgraph]
         enumerate_subgraphs: Dict[str, List] = {}
         subgraph_labels = list(subgraph_count.keys())
         canonical_labels = lb.collect_labelg(subgraph_labels)
@@ -60,13 +59,12 @@ class ESU:
             if canonical_label in enumerate_subgraphs:
                 enumerate_subgraphs[canonical_label][0] += matched_count
             else:
-                nx_subgraph = self.G.subgraph(matched_subgraph_nodes)
-                s = Subgraph(graph_type=self.graph_type, input=nx_subgraph, label=canonical_label)
-                enumerate_subgraphs[canonical_label] = [matched_count, s]
+                enumerate_subgraphs[canonical_label] = [matched_count, matched_subgraph_nodes]
 
-        self._enumerate_subgraphs = {s: count for count, s in enumerate_subgraphs.values()}
+        for label, (count, subgraph_nodes) in enumerate_subgraphs.items():
+            self._enumerate_subgraphs[label] = count, subgraph_nodes
 
-    def esu(self) -> Generator[list, None, None]:
+    def _esu(self) -> Generator[list, None, None]:
         """
         Return subgraphs nodes in a generator so that we don't run out of memory for k > 5,
         when we can have tens of millions of subgraphs on 1000 nodes and edges graphs
@@ -119,7 +117,8 @@ class ESU:
             if self._node_indices[w] > node_index_in_g
         )
 
-    def get_enumerated_subgraphs(self) -> Dict[Subgraph, int]:
+    def get_enumerated_subgraphs(self) -> Dict[str, Tuple[int, List]]:
+        """Returns the canonical_label -> (count, subgraph_nodes) mapping"""
         return self._enumerate_subgraphs
 
     def number_of_subgraphs(self):
