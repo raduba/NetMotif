@@ -1,3 +1,4 @@
+import platform
 import time
 import networkx as nx
 import os
@@ -78,6 +79,34 @@ def d6(graph: nx.Graph, subgraph_nodes: list) -> bytes:
     return bytes(bit_vector)
 
 
+def _get_labelg_path() -> str:
+    """
+    Resolves the path to the labelg executable based on the current OS and architecture,
+    so both linux and macOS binaries are supported.
+    Expected folder structure: NetMotif/bin/{os}/{arch}/labelg
+    Assumes this file is in src/label.py
+
+    For example:
+    - Linux binaries will go to:
+      NetMotif/bin/linux/amd64/labelg
+    - macOS binaries will go to:
+      NetMotif/bin/darwin/arm64/labelg
+    """
+    system = platform.system().lower()
+    arch = platform.machine().lower()
+
+    if arch == "x86_64" or arch == "amd64":
+        arch = "amd64"
+    elif arch == "aarch64":
+        arch = "arm64"
+
+    labelg = "labelg.exe" if system == "windows" else "labelg"
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(current_dir)
+
+    return os.path.join(project_root, "bin", system, arch, labelg)
+
+
 def collect_labelg(labels: list[bytes]) -> list[str]:
     """
     Collect the canonical label for all the labels using only one labelg process, instead of
@@ -90,7 +119,7 @@ def collect_labelg(labels: list[bytes]) -> list[str]:
         return []
 
     start_time = time.perf_counter()
-    label_g = "./labelg"
+    label_g = _get_labelg_path()
     if os.path.isfile(label_g):
         os.chmod(label_g, 0o755)
     else:
