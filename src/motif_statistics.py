@@ -25,6 +25,8 @@ def process_statistics(original_graph: GraphWithSubgraph, graphs: list[GraphWith
     total_number_of_subgraphs = sum(original_graph.subgraph_list_enumerated.values())
     print(f"process_statistics: total_number_of_subgraphs = {total_number_of_subgraphs}")
     for subgraph in subgraph_table:
+        print(f"label count for {subgraph.get_label()}: "
+              f"{original_graph.subgraph_list_enumerated[subgraph]}")
         original_freq = (
             original_graph.subgraph_list_enumerated[subgraph] / total_number_of_subgraphs
         )

@@ -6,9 +6,9 @@ class Subgraph(Graph):
     A graph of same size as motif. GraphWithSubgraphs --<*> Subgraphs
     """
 
-    def __init__(self, graph_type, input, basic_label=""):
+    def __init__(self, graph_type, input, basic_label="", label=""):
         super().__init__(graph_type, input)  # Call the parent's __init__
-        self.label = ""
+        self.label = label
         self.basic_label = basic_label
 
     def __eq__(self, other):
