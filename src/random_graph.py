@@ -3,8 +3,10 @@ from src.motif_search import random_esu
 from src.graph_with_subgraph import GraphWithSubgraph
 from src.graph_utils import Graph
 
-def generate_random_graphs(mimicked_graph: Graph,
-                           number_of_graphs, motif_size: int, seed: int | None = None) -> list[GraphWithSubgraph]:
+
+def generate_random_graphs(
+    mimicked_graph: Graph, number_of_graphs, motif_size: int, seed: int | None = None
+) -> list[GraphWithSubgraph]:
     progress_text = "Random graph generation in progress. Please wait."
     my_bar = st.progress(0, text=progress_text)
 
@@ -24,9 +26,7 @@ def generate_random_graphs(mimicked_graph: Graph,
 
     return [
         GraphWithSubgraph(
-            graph_type=mimicked_graph.graph_type,
-            input=esu.G,
-            motif_size=motif_size,
-            esu=esu
-        ) for esu in esu_results
+            graph_type=mimicked_graph.graph_type, input=esu.G, motif_size=motif_size, esu=esu
+        )
+        for esu in esu_results
     ]

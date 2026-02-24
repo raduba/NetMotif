@@ -16,6 +16,7 @@ from streamlit.runtime.uploaded_file_manager import UploadedFile
 from pyvis.network import Network
 from src.graph_types import GraphType
 
+
 class Graph:
     def __init__(self, graph_type, input):
         self.graph_type = graph_type
@@ -43,7 +44,7 @@ class Graph:
             self.G = input
 
     def read_file(self, file_directory):
-        with open(file_directory, 'r') as f:
+        with open(file_directory, "r") as f:
             file_content_edges = f.readlines()
             for edge in file_content_edges:
                 nodes = edge.strip().split()
@@ -61,15 +62,15 @@ class Graph:
             "Weight": self.G.size(),
         }
 
-    '''
+    """
     def draw_random_graphs(self, number_of_graphs) -> list["Graph"]:
         random_graphs = rg.generate_random_graphs(self, number_of_graphs)
         for graph in random_graphs:
             graph.draw_graph()
         return random_graphs
-    '''
+    """
 
-    def draw_graph(self, output_file_name = "nx.html"):
+    def draw_graph(self, output_file_name="nx.html"):
         output_dir = "drawings"
         if self.graph_type == GraphType.DIRECTED:
             nt = Network(directed=True)
@@ -78,7 +79,7 @@ class Graph:
         nt.from_nx(self.G)
         nt.toggle_physics(True)  # add physic to graph
         nt.toggle_hide_edges_on_drag(True)
-        #nt.show_buttons(filter_=["physics"])
+        # nt.show_buttons(filter_=["physics"])
 
         # Render the graph to an HTML file
         # file_name = os.path.join(output_dir, output_file_name)

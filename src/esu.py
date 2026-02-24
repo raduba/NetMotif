@@ -13,8 +13,7 @@ class ESU:
         """
         self.G = G
         self.G_undirected = (
-            G if graph_type == GraphType.UNDIRECTED
-            else G.to_undirected(as_view=True)
+            G if graph_type == GraphType.UNDIRECTED else G.to_undirected(as_view=True)
         )
         self.size = size
         self.graph_type = graph_type
@@ -74,11 +73,7 @@ class ESU:
             node_visited = {node}
             node_index = self._node_indices[node]
             yield from self._esu_helper(
-                self.size,
-                set(self.get_right_neighbors(node)),
-                node_list,
-                node_visited,
-                node_index
+                self.size, set(self.get_right_neighbors(node)), node_list, node_visited, node_index
             )
 
     def _esu_helper(
@@ -102,7 +97,9 @@ class ESU:
             next_neighbors = neighbors.union(new_neighbors)
             next_neighbors.difference_update(nodes_visited)
 
-            yield from self._esu_helper(size - 1, next_neighbors, node_list, nodes_visited, root_index)
+            yield from self._esu_helper(
+                size - 1, next_neighbors, node_list, nodes_visited, root_index
+            )
 
             node_list.pop()
 
@@ -113,8 +110,7 @@ class ESU:
         # Retrieve neighbors that are "right" of the given node in the graph's index order
         node_index_in_g = self._node_indices[node]
         return (
-            w for w in self.G_undirected.neighbors(node)
-            if self._node_indices[w] > node_index_in_g
+            w for w in self.G_undirected.neighbors(node) if self._node_indices[w] > node_index_in_g
         )
 
     def get_enumerated_subgraphs(self) -> Dict[str, Tuple[int, List]]:
