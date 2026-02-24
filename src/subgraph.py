@@ -1,17 +1,15 @@
 from src.graph_utils import Graph
-#from src.graph_types import GraphType
-#import src.label as lb
-#import streamlit as st
-#import time
 
-'''
-A graph of same size as motif. GraphWithSubgraphs --<*> Subgraphs
-'''
+
 class Subgraph(Graph):
-    def __init__(self, graph_type, input):
+    """
+    A graph of same size as motif. GraphWithSubgraphs --<*> Subgraphs
+    """
+
+    def __init__(self, graph_type, input, basic_label="", label=""):
         super().__init__(graph_type, input)  # Call the parent's __init__
-        self.label = ""
-        #self.set_label()
+        self.label = label
+        self.basic_label = basic_label
 
     def __eq__(self, other):
         if isinstance(other, Subgraph):

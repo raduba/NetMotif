@@ -81,14 +81,16 @@ class Graph:
         #nt.show_buttons(filter_=["physics"])
 
         # Render the graph to an HTML file
-        file_name = os.path.join(output_dir, output_file_name)
+        # file_name = os.path.join(output_dir, output_file_name)
 
         # make sure output folder for the drawings exists
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
-        nt.write_html(file_name, open_browser=False)
-        with open(file_name, "r") as f:
-            html = f.read()
+        # nt.write_html(file_name, open_browser=False)
+        # with open(file_name, "r") as f:
+        #     html = f.read()
 
+        # Render the graph to a string
+        html = nt.generate_html()
         components.html(html, height=700, scrolling=True)
