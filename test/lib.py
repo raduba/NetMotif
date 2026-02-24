@@ -6,6 +6,7 @@ from src.graph_with_subgraph import GraphWithSubgraph
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 
+
 def compute_label_frequencies(
     input: str | io.BytesIO | nx.Graph | nx.DiGraph,
     size: int,
@@ -23,6 +24,7 @@ def compute_label_frequencies(
     g = GraphWithSubgraph(graph_type, input, size)
     return get_label_frequencies(g)
 
+
 def get_label_frequencies(graph: GraphWithSubgraph) -> dict[str, float]:
     """
     Gets the label frequencies ({canonical_label: percent frequency}) for a graph
@@ -35,6 +37,6 @@ def get_label_frequencies(graph: GraphWithSubgraph) -> dict[str, float]:
     # website returns, so it's easier to compare.
     total_count = float(sum(graph.subgraph_list_enumerated.values()))
     return {
-        subgraph.get_label(): 100 * float(count)/total_count
+        subgraph.get_label(): 100 * float(count) / total_count
         for subgraph, count in graph.subgraph_list_enumerated.items()
     }

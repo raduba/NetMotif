@@ -13,3 +13,6 @@ dependencies = [
     "pytest>=9.0.2",
     "syrupy>=5.1.0",
 ]
+
+[tool.black]
+line-length = 100
