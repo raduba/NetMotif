@@ -89,7 +89,7 @@ def main():
     if "prev_uploaded_file" not in st.session_state:
         st.session_state["prev_uploaded_file"] = None
 
-    uploaded_file = st.file_uploader("")
+    uploaded_file = st.file_uploader("Graph File", label_visibility="hidden")
     if uploaded_file:
         if uploaded_file != st.session_state["prev_uploaded_file"]:
             st.session_state["uploaded_file"] = uploaded_file
