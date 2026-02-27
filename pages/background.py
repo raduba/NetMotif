@@ -1,4 +1,6 @@
+import os
 import streamlit as st
+from src.paths import PROJECT_ROOT
 
 st.set_page_config(page_title="Background and Algorithms")
 st.title("Biological Background and Algorithms")
@@ -32,7 +34,7 @@ st.markdown("""
     Figure 4 contains a visual example of how this algorithm functions.
 
 """)
-st.image("./NetMotif/resources/ESUexample.png", caption="Figure 4")
+st.image(os.path.join(PROJECT_ROOT, "resources", "ESUexample.png"), caption="Figure 4")
 st.markdown("""
     #### G6 Labeling
     g6, or graph6, labeling is a format that represents the connections between nodes. To start, 
@@ -49,7 +51,7 @@ st.markdown("""
     into a canonical labeling software that converts the g6 label to a labeling system that has 
     a unique label for each non-isomorphic graph.
     """)
-st.image("./NetMotif/resources/adjacencyExample.png", caption="Figure 5")
+st.image(os.path.join(PROJECT_ROOT, "resources", "adjacencyExample.png"), caption="Figure 5")
 st.markdown("""
     #### Random Graph Generation
     When testing if the input graph has any motifs, its subgraph frequencies need to be compared 
@@ -58,5 +60,5 @@ st.markdown("""
     Figure 6, and puts them into a single list of all nodes, as shown in Figure 7. Finally, the nodes are  
     randomly matched together to make a new graph.
     """)
-st.image("./NetMotif/resources/figure6.png", caption="Figure 6")
-st.image("./NetMotif/resources/figure7.png", caption="Figure 7")
+st.image(os.path.join(PROJECT_ROOT, "resources", "figure6.png"), caption="Figure 6")
+st.image(os.path.join(PROJECT_ROOT, "resources", "figure7.png"), caption="Figure 7")

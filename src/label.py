@@ -4,6 +4,7 @@ import networkx as nx
 import os
 import subprocess
 from src.graph_types import GraphType
+from src.paths import PROJECT_ROOT
 
 
 def g6(graph: nx.Graph, subgraph_nodes: list) -> bytes:
@@ -101,10 +102,8 @@ def _get_labelg_path() -> str:
         arch = "arm64"
 
     labelg = "labelg.exe" if system == "windows" else "labelg"
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.dirname(current_dir)
 
-    return os.path.join(project_root, "bin", system, arch, labelg)
+    return os.path.join(PROJECT_ROOT, "bin", system, arch, labelg)
 
 
 def collect_labelg(labels: list[bytes]) -> list[str]:
