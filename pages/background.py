@@ -1,10 +1,9 @@
 import streamlit as st
 
 st.set_page_config(page_title="Background and Algorithms")
-st.title('Biological Background and Algorithms')
+st.title("Biological Background and Algorithms")
 
-st.markdown(
-"""
+st.markdown("""
     ## Biological Background and Implications
     NEMO: network motif detection is a useful tool for identifying protein to protein 
     interactions in biological processes. Finding these gene expression patterns can aide in 
@@ -32,11 +31,9 @@ st.markdown(
     During this process, the visited node set is updated with each call to prevent repeated subgraphs. 
     Figure 4 contains a visual example of how this algorithm functions.
 
-"""
-)
-st.image('./NetMotif/resources/ESUexample.png', caption='Figure 4')
-st.markdown(
-    """
+""")
+st.image("./NetMotif/resources/ESUexample.png", caption="Figure 4")
+st.markdown("""
     #### G6 Labeling
     g6, or graph6, labeling is a format that represents the connections between nodes. To start, 
     the first character of the label is always the size of the subgraph plus 63 converted to a character 
@@ -51,18 +48,15 @@ st.markdown(
     g6 label. g6 labeling has different outputs for isomorphic graphs, so the outputs need to be passed 
     into a canonical labeling software that converts the g6 label to a labeling system that has 
     a unique label for each non-isomorphic graph.
-    """
-)
-st.image('./NetMotif/resources/adjacencyExample.png', caption='Figure 5')
-st.markdown(
-    """
+    """)
+st.image("./NetMotif/resources/adjacencyExample.png", caption="Figure 5")
+st.markdown("""
     #### Random Graph Generation
     When testing if the input graph has any motifs, its subgraph frequencies need to be compared 
     against subgraph frequencies from random graphs of the same size and degree. To do this, an 
     n number of random graphs are generated. Each graph collects all the connections, as shown in 
     Figure 6, and puts them into a single list of all nodes, as shown in Figure 7. Finally, the nodes are  
     randomly matched together to make a new graph.
-    """
-)
-st.image('./NetMotif/resources/figure6.png', caption='Figure 6')
-st.image('./NetMotif/resources/figure7.png', caption='Figure 7')
+    """)
+st.image("./NetMotif/resources/figure6.png", caption="Figure 6")
+st.image("./NetMotif/resources/figure7.png", caption="Figure 7")
