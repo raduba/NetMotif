@@ -1,3 +1,4 @@
+import gzip
 import tempfile
 from collections import defaultdict
 from dataclasses import dataclass
@@ -26,10 +27,11 @@ class DownloadInfo:
 
 _DOWNLOAD_FILE_INFO = {
     NemoOutputType.SUBGRAPH_PROFILE: DownloadInfo(
-        download_filename="subgraph_profile.txt", download_label="Download subgraph profile"
+        download_filename="subgraph_profile.txt.gz", download_label="Download subgraph profile"
     ),
     NemoOutputType.SUBGRAPH_COLLECTION: DownloadInfo(
-        download_filename="subgraph_collection.txt", download_label="Download subgraph collection"
+        download_filename="subgraph_collection.txt.gz",
+        download_label="Download subgraph collection",
     ),
 }
 
@@ -44,7 +46,7 @@ class GraphWithSubgraph(Graph):
         self._download_file_path: str | None = None
         self._download_file: TextIOWrapper | tempfile._TemporaryFileWrapper[str] | None = None
         # label -> dict[Node, int] ; label to node counter
-        self._nodes_dictionary: dict[str, dict[Any, int]] = defaultdict(defaultdict)
+        self._nodes_dictionary: dict[str, dict[Any, int]] = defaultdict(lambda: defaultdict(int))
         self._esu_callback = None
         # dictionary of subgraph enumeration (Subgraph -> #)
         self.subgraph_list_enumerated: Dict[Subgraph, int] = {}
@@ -111,16 +113,22 @@ class GraphWithSubgraph(Graph):
         return simple_properties
 
     def _init_download_file(self):
+        """
+        Create a temporary file and keep it open so that the ESU callbacks can directly write the
+        subgraph info to the file. The file is deleted by the class destructor.
+        """
         file_info = _DOWNLOAD_FILE_INFO.get(self._nemo_type, None)
         if file_info is None:
             return
 
         temp_file = tempfile.NamedTemporaryFile(
-            mode="w", prefix="nemo_", delete=False, suffix=".txt"
+            mode="w", prefix="nemo_", delete=False, suffix=".txt.gz"
         )
 
         self._download_file_path = temp_file.name
-        self._download_file = temp_file
+        temp_file.close()
+
+        self._download_file = gzip.open(self._download_file_path, "wt")
         print(f"temp download file created: {self._download_file_path}")
 
         if self._nemo_type == NemoOutputType.SUBGRAPH_COLLECTION:
@@ -143,13 +151,16 @@ class GraphWithSubgraph(Graph):
         Data will be saved in the download file after ESU completes by the _format_download_file
           method.
         """
-        if canonical_label not in self._nodes_dictionary:
-            self._nodes_dictionary[canonical_label] = defaultdict(int)
-
         for node in data:
             self._nodes_dictionary[canonical_label][node] += 1
 
     def _format_download_file(self):
+        """
+        Perform the final writing to the download file after ESU completes.
+        Currently, only SUBGRAPH_PROFILE needs to write the profile matrix to the download file.
+        SUBGRAPH_COLLECTION updates the file on every ESU callback and does not need to perform
+        special formatting on completion.
+        """
         if self._nemo_type == NemoOutputType.SUBGRAPH_PROFILE:
             top_row = f"{'Nodes':<10}"  # top row for graph labels
             for key in self._nodes_dictionary:
