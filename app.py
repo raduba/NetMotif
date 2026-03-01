@@ -2,7 +2,7 @@ import streamlit as st
 import time
 import os
 import io
-from src.graph_with_subgraph import GraphWithSubgraph
+from src.graph_with_subgraph import GraphWithSubgraph, NemoOutputType
 from src.graph_types import GraphType
 import src.random_graph as rg
 import src.motif_statistics as stat
@@ -25,11 +25,18 @@ def form_callback(start_time):
         st.warning("Please select a graph type.")
         return
 
+    nemo_output_type = NemoOutputType.NEMO_COUNT
+    if st.session_state["nemo_count_option"] == "SubgraphProfile":
+        nemo_output_type = NemoOutputType.SUBGRAPH_PROFILE
+    elif st.session_state["nemo_count_option"] == "SubgraphCollection":
+        nemo_output_type = NemoOutputType.SUBGRAPH_COLLECTION
+
     # create graph from file
     G = GraphWithSubgraph(
         graph_type=st.session_state["graph_type"],
         input=st.session_state["uploaded_file"],
         motif_size=st.session_state["motif_size"],
+        nemo_type=nemo_output_type,
     )
 
     # display graph properties
@@ -71,14 +78,7 @@ def form_callback(start_time):
     st.write(f"Time elapsed: {elapsed_time:.2f} seconds")
 
     # Download button if nemo count option is selected to subgraph collection
-    if st.session_state["nemo_count_option"] == "NemoCount":
-        G.generate_nemo_count()
-
-    if st.session_state["nemo_count_option"] == "SubgraphProfile":
-        G.generate_subgraph_profile()
-
-    if st.session_state["nemo_count_option"] == "SubgraphCollection":
-        G.generate_subgraph_collection()
+    G.generate_download_button()
 
 
 def main():

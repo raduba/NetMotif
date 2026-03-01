@@ -1,5 +1,5 @@
 import time
-from typing import Dict, Generator, List, Tuple
+from typing import Dict, Generator, List, Tuple, Callable
 import networkx as nx
 from src.graph_types import GraphType
 import src.label as lb
@@ -7,7 +7,13 @@ from src.label import AsyncLabelg
 
 
 class ESU:
-    def __init__(self, G: nx.Graph, size: int, graph_type: GraphType):
+    def __init__(
+        self,
+        G: nx.Graph,
+        size: int,
+        graph_type: GraphType,
+        label_callback: Callable[[str, list], None] = None,
+    ):
         """
         Enumerates all unique subgraphs of a given motif size from the input
                 graph using the ESU algorithm.
@@ -35,6 +41,9 @@ class ESU:
                 enumerate_subgraphs[canonical_label][0] += 1
             else:
                 enumerate_subgraphs[canonical_label] = [1, data]
+
+            if label_callback:
+                label_callback(canonical_label, data)
 
         labelg = AsyncLabelg(on_label)
 

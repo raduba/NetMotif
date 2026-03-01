@@ -1,4 +1,9 @@
-from typing import Dict
+import tempfile
+from collections import defaultdict
+from dataclasses import dataclass
+from enum import Enum
+from io import TextIOWrapper
+from typing import Dict, Any
 import networkx as nx
 import os
 import streamlit as st
@@ -7,13 +12,40 @@ from src.subgraph import Subgraph
 from src.esu import ESU
 
 
+class NemoOutputType(Enum):
+    NEMO_COUNT = 1
+    SUBGRAPH_PROFILE = 2
+    SUBGRAPH_COLLECTION = 3
+
+
+@dataclass
+class DownloadInfo:
+    download_filename: str
+    download_label: str
+
+
+_DOWNLOAD_FILE_INFO = {
+    NemoOutputType.SUBGRAPH_PROFILE: DownloadInfo(
+        download_filename="subgraph_profile.txt", download_label="Download subgraph profile"
+    ),
+    NemoOutputType.SUBGRAPH_COLLECTION: DownloadInfo(
+        download_filename="subgraph_collection.txt", download_label="Download subgraph collection"
+    ),
+}
+
+
 class GraphWithSubgraph(Graph):
-    def __init__(self, graph_type, input, motif_size, esu=None):
+    def __init__(
+        self, graph_type, input, motif_size, esu=None, nemo_type=NemoOutputType.NEMO_COUNT
+    ):
         # instantiation of Graph object
         super().__init__(graph_type, input)
-        # TODO: reimplement and subgraph_collection so that we don;t need to keep the list
-        #  of all iterated subgraphs
-        # self.subgraph_list: list[Subgraph] = []
+        self._nemo_type: NemoOutputType = nemo_type
+        self._download_file_path: str | None = None
+        self._download_file: TextIOWrapper | tempfile._TemporaryFileWrapper[str] | None = None
+        # label -> dict[Node, int] ; label to node counter
+        self._nodes_dictionary: dict[str, dict[Any, int]] = defaultdict(defaultdict)
+        self._esu_callback = None
         # dictionary of subgraph enumeration (Subgraph -> #)
         self.subgraph_list_enumerated: Dict[Subgraph, int] = {}
         # number of nodes in subgraphs
@@ -25,7 +57,13 @@ class GraphWithSubgraph(Graph):
         if esu is None:
             # creating Subgraph list and dict
             self.my_bar = st.progress(0, text="ESU algorithm in progress. Please wait.")
-            self.esu = ESU(self.G, motif_size, graph_type)
+            try:
+                self._init_download_file()
+                self.esu = ESU(self.G, motif_size, graph_type, self._esu_callback)
+            finally:
+                if self._download_file:
+                    self._format_download_file()
+                    self._download_file.close()
             self.my_bar.empty()
         else:
             # use the result from an already run esu
@@ -38,6 +76,15 @@ class GraphWithSubgraph(Graph):
             nx_subgraph = self.G.subgraph(subgraph_nodes)
             s = Subgraph(graph_type=self.graph_type, input=nx_subgraph, label=canonical_label)
             self.subgraph_list_enumerated[s] = count
+
+    def __del__(self):
+        """Delete the temporary file when this object goes out of scope."""
+        if self._download_file_path and os.path.exists(self._download_file_path):
+            try:
+                print(f"deleting temporary file: {self._download_file_path}")
+                os.remove(self._download_file_path)
+            except Exception as e:
+                print(f"Failed to remove {self._download_file_path}: {e}")
 
     def draw_subgraph(self):
         output_dir = "drawings/subgraphs"  # output directory
@@ -63,84 +110,71 @@ class GraphWithSubgraph(Graph):
 
         return simple_properties
 
-    def generate_nemo_count(self):
-        # do nothing
-        return
+    def _init_download_file(self):
+        file_info = _DOWNLOAD_FILE_INFO.get(self._nemo_type, None)
+        if file_info is None:
+            return
 
-    # @st.cache_data
-    def generate_subgraph_profile(self):
-        # TODO: reimplement it without keeping the whole list of subgraphs
-        raise ValueError("Not implemented")
-        output_dir = "out"
-        subgraph_profile_output = os.path.join(output_dir, "subgraph_profile.txt")
+        temp_file = tempfile.NamedTemporaryFile(
+            mode="w", prefix="nemo_", delete=False, suffix=".txt"
+        )
 
-        # Ensure output folder exists
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+        self._download_file_path = temp_file.name
+        self._download_file = temp_file
+        print(f"temp download file created: {self._download_file_path}")
 
-        # label-node count dictionary
-        nodes_dictionary = {}
+        if self._nemo_type == NemoOutputType.SUBGRAPH_COLLECTION:
+            self._esu_callback = self._write_subgraph_collections
+        elif self._nemo_type == NemoOutputType.SUBGRAPH_PROFILE:
+            self._esu_callback = self._update_subgraph_profile
 
-        # iterate over subgraphs
-        # TODO: update this so that we don't need to keep the subgraphs list
-        for subgraph in self.subgraph_list:
-            label = subgraph.get_label()
-            # if label not accounted for
-            if label not in nodes_dictionary:
-                # fill in all node count as 0 for label
-                nodes_dictionary[label] = {}
-                for node in self.G:
-                    nodes_dictionary[label][node] = 0
-            # for every node in the subgraph add 1 to its label-node count
-            for node in subgraph.G.nodes:
-                nodes_dictionary[label][node] += 1
+    def _write_subgraph_collections(self, canonical_label: str, data: list):
+        """
+        ESU callback function for handling subgraph collection data.
+        Append the canonical label and the data subgraph to the download file.
+        """
+        nodes = ", ".join((str(x) for x in data))
+        self._download_file.write(f"{canonical_label}[{nodes}]\n")
 
-        # Write into file
-        with open(subgraph_profile_output, "w") as file:
+    def _update_subgraph_profile(self, canonical_label: str, data: list):
+        """
+        ESU callback function for handling subgraph profile data.
+        Update the node count for each canonical label.
+        Data will be saved in the download file after ESU completes by the _format_download_file
+          method.
+        """
+        if canonical_label not in self._nodes_dictionary:
+            self._nodes_dictionary[canonical_label] = defaultdict(int)
+
+        for node in data:
+            self._nodes_dictionary[canonical_label][node] += 1
+
+    def _format_download_file(self):
+        if self._nemo_type == NemoOutputType.SUBGRAPH_PROFILE:
             top_row = f"{'Nodes':<10}"  # top row for graph labels
-            for key in nodes_dictionary:
+            for key in self._nodes_dictionary:
                 top_row += f"{key.strip():<10}"  # strip new line from label
             top_row += "\n"  # make space for the nodes and their count
-            file.write(top_row)
+            self._download_file.write(top_row)
             # each nodes count in its associated graph
             for node in self.G:
                 line = f"{node:<10}"
-                for key in nodes_dictionary:
-                    line += f"{nodes_dictionary[key][node]:<10}"
+                for key in self._nodes_dictionary:
+                    line += f"{self._nodes_dictionary[key][node]:<10}"
                 line += "\n"
-                file.writelines(line)
+                self._download_file.writelines(line)
 
-        # Display download button for file
-        with open(subgraph_profile_output, "r") as file:
-            return st.download_button(
-                label="Download subgraph profile",
-                data=file,
-                file_name="subgraph_profile.txt",
-            )
+    def generate_download_button(self):
+        file_info = _DOWNLOAD_FILE_INFO.get(self._nemo_type, None)
+        if file_info is None or self._download_file_path is None:
+            return None
 
-    # @st.cache_data
-    def generate_subgraph_collection(self):
-        # TODO: reimplement it without keeping the whole list of subgraphs
-        raise ValueError("Not implemented")
-        output_dir = "out"
-        subgraph_collection_output = os.path.join(output_dir, "subgraph_collection.txt")
+        if os.path.exists(self._download_file_path):
+            with open(self._download_file_path, "rb") as download_file:
+                return st.download_button(
+                    label=file_info.download_label,
+                    data=download_file,
+                    file_name=file_info.download_filename,
+                )
 
-        # Ensure output folder exists
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-
-        # Write into file
-        with open(subgraph_collection_output, "w") as file:
-            for subgraph in self.subgraph_list:
-                nodes = subgraph.G.nodes()
-                line = ""
-                line += subgraph.get_label() + "[" + ", ".join([str(x) for x in nodes]) + "] \n"
-                file.write(line)
-
-        # Display download button for file
-        with open(subgraph_collection_output, "r") as file:
-            return st.download_button(
-                label="Download subgraph collection",
-                data=file,
-                file_name="subgraph_collection.txt",
-            )
+        return None
