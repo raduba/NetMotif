@@ -21,7 +21,7 @@ def _randomized_esu(
         out_degrees = [d for _, d in G_mimicked.out_degree()]
         G_random = nx.DiGraph(nx.directed_configuration_model(in_degrees, out_degrees, seed=seed))
     G_random.remove_edges_from(nx.selfloop_edges(G_random))
-    return ESU(G_random, motif_size, graph_type, progress_update=None)
+    return ESU(G_random, motif_size, graph_type)
 
 
 def random_esu(

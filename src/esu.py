@@ -7,7 +7,7 @@ from src.label import AsyncLabelg
 
 
 class ESU:
-    def __init__(self, G: nx.Graph, size: int, graph_type: GraphType, progress_update=None):
+    def __init__(self, G: nx.Graph, size: int, graph_type: GraphType):
         """
         Enumerates all unique subgraphs of a given motif size from the input
                 graph using the ESU algorithm.
@@ -22,9 +22,6 @@ class ESU:
         self._enumerate_subgraphs: Dict[str, Tuple[int, List]] = {}
         self.nodes = list(self.G.nodes())
         self._node_indices = {n: i for i, n in enumerate(self.nodes)}
-
-        # basic label -> [count, subgraph_nodes_list]
-        subgraph_count: dict[bytes, List] = {}
         self._total_subgraphs = 0
 
         # Canonical label -> [number of subgraphs, reference subgraph nodes]
