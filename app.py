@@ -2,7 +2,6 @@ import streamlit as st
 import time
 import os
 import io
-from streamlit.runtime.uploaded_file_manager import UploadedFile
 from src.graph_with_subgraph import GraphWithSubgraph
 from src.graph_types import GraphType
 import src.random_graph as rg
@@ -24,10 +23,6 @@ def form_callback(start_time):
 
     if st.session_state.get("graph_type") is None:
         st.warning("Please select a graph type.")
-        return
-
-    if st.session_state.get("number_of_random_graphs") is None:
-        st.warning("Please select a number of random graphs between 5-100.")
         return
 
     # create graph from file
@@ -54,20 +49,26 @@ def form_callback(start_time):
         st.markdown("### Subgraph Visualization")
         G.draw_subgraph()
 
-    # Generate random graphs
-    random_graphs = rg.generate_random_graphs(
-        G, st.session_state["number_of_random_graphs"], G.motif_size
-    )
+    if (
+        st.session_state.get("number_of_random_graphs") is not None
+        and st.session_state["number_of_random_graphs"] > 0
+    ):
+        # Generate random graphs
+        random_graphs = rg.generate_random_graphs(
+            G, st.session_state["number_of_random_graphs"], G.motif_size
+        )
 
-    stats = stat.process_statistics(G, random_graphs)
+        stats = stat.process_statistics(G, random_graphs)
+        end_time = time.time()
 
-    end_time = time.time()
+        # Visualize statistics
+        st.markdown("### Statistics Table")
+        stat.draw_statistics(stats)
+    else:
+        end_time = time.time()
+
     elapsed_time = end_time - start_time
     st.write(f"Time elapsed: {elapsed_time:.2f} seconds")
-
-    # Visualize statistics
-    st.markdown("### Statistics Table")
-    stat.draw_statistics(stats)
 
     # Download button if nemo count option is selected to subgraph collection
     if st.session_state["nemo_count_option"] == "NemoCount":
@@ -134,7 +135,7 @@ def main():
                 "Number of random graphs",
                 value=2,
                 placeholder="Input number of graphs...",
-                min_value=2,
+                min_value=0,
                 max_value=100,
             )
 
