@@ -7,6 +7,7 @@ from src.graph_with_subgraph import GraphWithSubgraph
 from src.graph_types import GraphType
 import src.random_graph as rg
 import src.motif_statistics as stat
+from src.paths import PROJECT_ROOT
 
 st.set_page_config(page_title="NEMO motif detection program")
 st.title("NEMO motif detection program")
@@ -54,7 +55,9 @@ def form_callback(start_time):
         G.draw_subgraph()
 
     # Generate random graphs
-    random_graphs = rg.generate_random_graphs(G, st.session_state["number_of_random_graphs"], G.motif_size)
+    random_graphs = rg.generate_random_graphs(
+        G, st.session_state["number_of_random_graphs"], G.motif_size
+    )
 
     stats = stat.process_statistics(G, random_graphs)
 
@@ -86,7 +89,7 @@ def main():
     if "prev_uploaded_file" not in st.session_state:
         st.session_state["prev_uploaded_file"] = None
 
-    uploaded_file = st.file_uploader("")
+    uploaded_file = st.file_uploader("Graph File", label_visibility="hidden")
     if uploaded_file:
         if uploaded_file != st.session_state["prev_uploaded_file"]:
             st.session_state["uploaded_file"] = uploaded_file
@@ -95,7 +98,7 @@ def main():
 
     demo = st.button("Use Demo File")
     if demo:
-        demo_path = "./NetMotif/data/bestTest.txt"
+        demo_path = os.path.join(PROJECT_ROOT, "data", "bestTest.txt")
         if os.path.exists(demo_path):
             with open(demo_path, "rb") as file:
                 file_content = file.read()
