@@ -25,7 +25,7 @@ class GraphWithSubgraph(Graph):
         if esu is None:
             # creating Subgraph list and dict
             self.my_bar = st.progress(0, text="ESU algorithm in progress. Please wait.")
-            self.esu = self.runESU(motif_size, graph_type)
+            self.esu = ESU(self.G, motif_size, graph_type)
             self.my_bar.empty()
         else:
             # use the result from an already run esu
@@ -38,16 +38,6 @@ class GraphWithSubgraph(Graph):
             nx_subgraph = self.G.subgraph(subgraph_nodes)
             s = Subgraph(graph_type=self.graph_type, input=nx_subgraph, label=canonical_label)
             self.subgraph_list_enumerated[s] = count
-
-    def runESU(self, motif_size, graph_type):
-        # produce list of subgraphs
-        # Progress update for subgraph enumeration
-        def _progress_update(text):
-            self.my_bar.empty()
-            self.my_bar = st.progress(0, text=text)
-            self.my_bar.progress(0, text=text)
-
-        return ESU(self.G, motif_size, graph_type, _progress_update)
 
     def draw_subgraph(self):
         output_dir = "drawings/subgraphs"  # output directory
