@@ -3,6 +3,7 @@ from typing import Dict, Generator, List, Tuple
 import networkx as nx
 from src.graph_types import GraphType
 import src.label as lb
+from src.label import AsyncLabelg
 
 
 class ESU:
@@ -26,39 +27,29 @@ class ESU:
         subgraph_count: dict[bytes, List] = {}
         self._total_subgraphs = 0
 
+        # Canonical label -> [number of subgraphs, reference subgraph nodes]
+        enumerate_subgraphs: Dict[str, List[int | List]] = {}
+
         start_time = time.perf_counter()
+
+        # This takes in a node list
+        def on_label(canonical_label: str, data: List):
+            if canonical_label in enumerate_subgraphs:
+                enumerate_subgraphs[canonical_label][0] += 1
+            else:
+                enumerate_subgraphs[canonical_label] = [1, data]
+
+        labelg = AsyncLabelg(on_label)
 
         for sg_nodes in self._esu():
             self._total_subgraphs += 1
             g6 = lb.basic_graph_label(self.G, sg_nodes, self.graph_type)
+            labelg.label(g6, sg_nodes)
 
-            if g6 in subgraph_count:
-                subgraph_count[g6][0] += 1
-            else:
-                # keep one subgraph / g6 so we can show it in the UI
-                subgraph_count[g6] = [1, sg_nodes]
+        labelg.finish()
 
         esu_time = time.perf_counter()
         print(f"enumerated {self._total_subgraphs} in {(esu_time - start_time):.6f} seconds")
-
-        # Progress bar for labeling subgraphs
-        if progress_update is not None:
-            progress_update("Labeling algorithm in progress. Please wait.")
-
-        labelg_start_time = time.perf_counter()
-
-        enumerate_subgraphs: Dict[str, List] = {}
-        subgraph_labels = list(subgraph_count.keys())
-        canonical_labels = lb.collect_labelg(subgraph_labels)
-
-        print(f"ESU.labelg time: {(time.perf_counter() - labelg_start_time):.6f} seconds")
-
-        for matched_label, canonical_label in zip(subgraph_labels, canonical_labels):
-            matched_count, matched_subgraph_nodes = subgraph_count[matched_label]
-            if canonical_label in enumerate_subgraphs:
-                enumerate_subgraphs[canonical_label][0] += matched_count
-            else:
-                enumerate_subgraphs[canonical_label] = [matched_count, matched_subgraph_nodes]
 
         for label, (count, subgraph_nodes) in enumerate_subgraphs.items():
             self._enumerate_subgraphs[label] = count, subgraph_nodes
