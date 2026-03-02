@@ -133,10 +133,10 @@ def main():
 
             number_of_random_graphs = st.number_input(
                 "Number of random graphs",
-                value=2,
+                value=20,
                 placeholder="Input number of graphs...",
                 min_value=0,
-                max_value=100,
+                max_value=1000,
             )
 
             nemo_count_type = st.radio(
