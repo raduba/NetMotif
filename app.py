@@ -26,10 +26,20 @@ def form_callback(start_time):
         return
 
     nemo_output_type = NemoOutputType.NEMO_COUNT
+    probabilities = None
     if st.session_state["nemo_count_option"] == "SubgraphProfile":
         nemo_output_type = NemoOutputType.SUBGRAPH_PROFILE
     elif st.session_state["nemo_count_option"] == "SubgraphCollection":
         nemo_output_type = NemoOutputType.SUBGRAPH_COLLECTION
+    elif st.session_state["nemo_count_option"] == "SubgraphSampling":
+        # Subgraph sampling is NEMO + probabilistically removing
+        # parts of the graph.
+        nemo_output_type = NemoOutputType.NEMO_COUNT
+        probabilities = [1] * st.session_state["motif_size"]
+
+        for i in range(st.session_state["motif_size"]):
+            # p(0) == 1, p(last node) == 0.1
+            probabilities[i] = 10.0 ** (-i / st.session_state["motif_size"])
 
     # create graph from file
     G = GraphWithSubgraph(
@@ -37,6 +47,7 @@ def form_callback(start_time):
         input=st.session_state["uploaded_file"],
         motif_size=st.session_state["motif_size"],
         nemo_type=nemo_output_type,
+        probabilities=probabilities,
     )
 
     # display graph properties
@@ -62,7 +73,10 @@ def form_callback(start_time):
     ):
         # Generate random graphs
         random_graphs = rg.generate_random_graphs(
-            G, st.session_state["number_of_random_graphs"], G.motif_size
+            G,
+            st.session_state["number_of_random_graphs"],
+            G.motif_size,
+            probabilities=probabilities,
         )
 
         stats = stat.process_statistics(G, random_graphs)
@@ -142,7 +156,7 @@ def main():
             nemo_count_type = st.radio(
                 "Nemo Data Options",
                 key="nemo_option",
-                options=["NemoCount", "SubgraphProfile", "SubgraphCollection"],
+                options=["NemoCount", "SubgraphProfile", "SubgraphCollection", "SubgraphSampling"],
             )
 
         with col2:

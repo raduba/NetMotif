@@ -1,3 +1,5 @@
+import math
+import random
 import time
 from typing import Dict, Generator, List, Tuple, Callable
 import networkx as nx
@@ -13,10 +15,17 @@ class ESU:
         size: int,
         graph_type: GraphType,
         label_callback: Callable[[str, list], None] = None,
+        probabilities: List[float] | None = None,
     ):
         """
         Enumerates all unique subgraphs of a given motif size from the input
                 graph using the ESU algorithm.
+
+        :param label_callback: callback function to be called for each subgraph
+        :param probabilities: when provided, this is used to run sampling ESU.
+                              len(probabilities) must equal size, and probabilities[0]
+                              refers to the probability of including each child in the root.
+                              All probabilities must be between 0 and 1.
         """
         self.G = G
         self.G_undirected = (
@@ -29,6 +38,7 @@ class ESU:
         self.nodes = list(self.G.nodes())
         self._node_indices = {n: i for i, n in enumerate(self.nodes)}
         self._total_subgraphs = 0
+        self.probabilities = probabilities
 
         # Canonical label -> [number of subgraphs, reference subgraph nodes]
         enumerate_subgraphs: Dict[str, List[int | List]] = {}
@@ -84,8 +94,21 @@ class ESU:
             return
 
         for node in neighbors:
-            node_list.append(node)
+            # Subgraph sampling, randomly exclude branches
+            # for faster computation.
+            # We have to append to nodes_visited first, before
+            # skipping the branch.
+            # That's because nodes_visited functions as the ESU neighbors of neighbors check,
+            # ensuring we only enumerate each subgraph once.
+            # If we conditionally append to it, then we'll end up changing the graph.
             nodes_visited.add(node)
+            if (
+                self.probabilities is not None
+                and random.random() > self.probabilities[self.size - size]
+            ):
+                continue
+
+            node_list.append(node)
 
             # Efficiently get next neighbors
             new_neighbors = {
