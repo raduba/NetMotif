@@ -4,7 +4,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
 from io import TextIOWrapper
-from typing import Dict, Any
+from typing import Dict, Any, List
 import networkx as nx
 import os
 import streamlit as st
@@ -38,7 +38,13 @@ _DOWNLOAD_FILE_INFO = {
 
 class GraphWithSubgraph(Graph):
     def __init__(
-        self, graph_type, input, motif_size, esu=None, nemo_type=NemoOutputType.NEMO_COUNT
+        self,
+        graph_type,
+        input,
+        motif_size,
+        esu=None,
+        nemo_type=NemoOutputType.NEMO_COUNT,
+        probabilities: List[float] | None = None,
     ):
         # instantiation of Graph object
         super().__init__(graph_type, input)
@@ -61,7 +67,9 @@ class GraphWithSubgraph(Graph):
             self.my_bar = st.progress(0, text="ESU algorithm in progress. Please wait.")
             try:
                 self._init_download_file()
-                self.esu = ESU(self.G, motif_size, graph_type, self._esu_callback)
+                self.esu = ESU(
+                    self.G, motif_size, graph_type, self._esu_callback, probabilities=probabilities
+                )
             finally:
                 if self._download_file:
                     self._format_download_file()

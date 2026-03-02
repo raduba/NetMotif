@@ -1,3 +1,5 @@
+from typing import List
+
 import streamlit as st
 from src.motif_search import random_esu
 from src.graph_with_subgraph import GraphWithSubgraph
@@ -5,7 +7,11 @@ from src.graph_utils import Graph
 
 
 def generate_random_graphs(
-    mimicked_graph: Graph, number_of_graphs, motif_size: int, seed: int | None = None
+    mimicked_graph: Graph,
+    number_of_graphs,
+    motif_size: int,
+    seed: int | None = None,
+    probabilities: List[float] | None = None,
 ) -> list[GraphWithSubgraph]:
     progress_text = "Random graph generation in progress. Please wait."
     my_bar = st.progress(0, text=progress_text)
@@ -22,6 +28,7 @@ def generate_random_graphs(
         number_of_graphs=number_of_graphs,
         complete_callback=_progress,
         seed=seed,
+        probabilities=probabilities,
     )
 
     return [

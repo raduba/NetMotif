@@ -9,7 +9,7 @@ import streamlit.components.v1 as components
 
 def draw_statistics(subgraph_table: dict):
     motif_table: dict = {}
-    for key in subgraph_table.keys():
+    for key in sorted(subgraph_table.keys(), key=lambda x: x.get_label()):
         new_key = ""
         new_key += key.get_label()
         # new_key += components.html(key.draw_graph())
