@@ -1,4 +1,3 @@
-import math
 import random
 import time
 from typing import Dict, Generator, List, Tuple, Callable
@@ -18,15 +17,19 @@ class ESU:
         probabilities: List[float] | None = None,
     ):
         """
-        Enumerates all unique subgraphs of a given motif size from the input
-                graph using the ESU algorithm.
-
-        :param label_callback: callback function to be called for each subgraph
-        :param probabilities: when provided, this is used to run sampling ESU.
-                              len(probabilities) must equal size, and probabilities[0]
-                              refers to the probability of including each child in the root.
-                              All probabilities must be between 0 and 1.
+        Enumerates the unique subgraphs of a given motif size from the input graph using the ESU
+        algorithm. The implementation is based on the algorithm as described in the
+        'A Faster Algorithm for Detecting Network Motifs' paper by Wernicke, which runs full
+        subgraph enumeration when all probabilities are 1.0 and the sampling method when nodes are
+        explored with the configured tree level probability.
         """
+        if probabilities is not None:
+            if len(probabilities) != size:
+                raise ValueError("probabilities must have size equal to motif size")
+
+            if any(p < 0.0 or p > 1.0 for p in probabilities):
+                raise ValueError("probabilities must have 0.0 <= p <= 1.0")
+
         self.G = G
         self.G_undirected = (
             G if graph_type == GraphType.UNDIRECTED else G.to_undirected(as_view=True)
@@ -38,7 +41,9 @@ class ESU:
         self.nodes = list(self.G.nodes())
         self._node_indices = {n: i for i, n in enumerate(self.nodes)}
         self._total_subgraphs = 0
-        self.probabilities = probabilities
+        self._probabilities = (
+            [1.0 for _ in range(self.size)] if probabilities is None else probabilities
+        )
 
         # Canonical label -> [number of subgraphs, reference subgraph nodes]
         enumerate_subgraphs: Dict[str, List[int | List]] = {}
@@ -73,9 +78,15 @@ class ESU:
     def _esu(self) -> Generator[list, None, None]:
         """
         Return subgraphs nodes in a generator so that we don't run out of memory for k > 5,
-        when we can have tens of millions of subgraphs on 1000 nodes and edges graphs
+        when we can have tens of millions of subgraphs on 1000 nodes and edges graphs.
+        Set all probabilities of selecting a node at a level to 1.0 for full ESU.
+        The level starts from 0 for the root nodes, and increases by 1 for each _esu_helper call.
+        When probability is less than 1.0, the sampling method is used and nodes are explored with
+        the probability given by level.
         """
         for node in self.nodes:
+            if random.random() >= self._probabilities[0]:
+                continue
             node_list = [node]
             node_visited = {node}
             node_index = self._node_indices[node]
@@ -94,18 +105,13 @@ class ESU:
             return
 
         for node in neighbors:
-            # Subgraph sampling, randomly exclude branches
-            # for faster computation.
-            # We have to append to nodes_visited first, before
-            # skipping the branch.
+            # Subgraph sampling, randomly exclude branches for faster computation.
+            # We have to append to nodes_visited first, before skipping the branch.
             # That's because nodes_visited functions as the ESU neighbors of neighbors check,
             # ensuring we only enumerate each subgraph once.
             # If we conditionally append to it, then we'll end up changing the graph.
             nodes_visited.add(node)
-            if (
-                self.probabilities is not None
-                and random.random() > self.probabilities[self.size - size]
-            ):
+            if random.random() >= self._probabilities[self.size - size + 1]:
                 continue
 
             node_list.append(node)
