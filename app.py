@@ -26,26 +26,25 @@ def form_callback(start_time):
         return
 
     nemo_output_type = NemoOutputType.NEMO_COUNT
-    probabilities = None
     if st.session_state["nemo_count_option"] == "SubgraphProfile":
         nemo_output_type = NemoOutputType.SUBGRAPH_PROFILE
     elif st.session_state["nemo_count_option"] == "SubgraphCollection":
         nemo_output_type = NemoOutputType.SUBGRAPH_COLLECTION
-    elif st.session_state["nemo_count_option"] == "SubgraphSampling":
-        # Subgraph sampling is NEMO + probabilistically removing
-        # parts of the graph.
-        nemo_output_type = NemoOutputType.NEMO_COUNT
-        probabilities = [1] * st.session_state["motif_size"]
 
-        for i in range(st.session_state["motif_size"]):
-            # p(0) == 1, p(last node) == 0.1
-            probabilities[i] = 10.0 ** (-i / st.session_state["motif_size"])
+    k = st.session_state["motif_size"]
+
+    probabilities = None
+    if st.session_state.get("is_sampling_selected", False):
+        probabilities = st.session_state.get("input_probabilities", None)
+        if probabilities is None or len(probabilities) != k:
+            st.warning("Please select sampling probabilities at each level.")
+            return
 
     # create graph from file
     G = GraphWithSubgraph(
         graph_type=st.session_state["graph_type"],
         input=st.session_state["uploaded_file"],
-        motif_size=st.session_state["motif_size"],
+        motif_size=k,
         nemo_type=nemo_output_type,
         probabilities=probabilities,
     )
@@ -127,45 +126,57 @@ def main():
             st.session_state["prev_uploaded_file"] = uploaded_file
             st.toast("Successfully uploaded demo file", icon="✅")
 
-    with st.form(key="form"):
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            graph_type = st.radio(
-                "Set Graph type:",
-                key="graph",
-                options=[GraphType.UNDIRECTED, GraphType.DIRECTED],
-                format_func=lambda x: x.value,
-            )
+    col1, col2 = st.columns([1, 2])
+    with col1:
+        graph_type = st.radio(
+            "Set Graph type:",
+            key="graph",
+            options=[GraphType.UNDIRECTED, GraphType.DIRECTED],
+            format_func=lambda x: x.value,
+        )
 
-            motif_size = st.number_input(
-                "Size of motif",
-                value=3,
-                placeholder="Input motif size...",
-                min_value=1,
-                max_value=8,
-            )
+        motif_size = st.number_input(
+            "Size of motif",
+            value=3,
+            placeholder="Input motif size...",
+            min_value=1,
+            max_value=8,
+        )
 
-            number_of_random_graphs = st.number_input(
-                "Number of random graphs",
-                value=20,
-                placeholder="Input number of graphs...",
-                min_value=0,
-                max_value=1000,
-            )
+        number_of_random_graphs = st.number_input(
+            "Number of random graphs",
+            value=20,
+            placeholder="Input number of graphs...",
+            min_value=0,
+            max_value=1000,
+        )
 
-            nemo_count_type = st.radio(
-                "Nemo Data Options",
-                key="nemo_option",
-                options=["NemoCount", "SubgraphProfile", "SubgraphCollection", "SubgraphSampling"],
-            )
+        nemo_count_type = st.radio(
+            "Nemo Data Options",
+            key="nemo_option",
+            options=["NemoCount", "SubgraphProfile", "SubgraphCollection"],
+        )
 
-        with col2:
-            st.write("NOTE: Uploading more than 1000 nodes might consume more processing time.")
-            st.write("Visualize Options:")
-            is_visualize_graph = st.checkbox("Visualize graph")
-            is_visualize_subgraph = st.checkbox("Visualize subgraph")
+        use_sampling = st.checkbox("Use Sampling")
+        input_probabilities = []
+        if use_sampling:
+            for i in range(motif_size):
+                p = st.number_input(
+                    f"Probability on level {i + 1}",
+                    key=f"prob_{i}",
+                    value=0.5,
+                    min_value=0.0,
+                    max_value=1.0,
+                )
+                input_probabilities.append(p)
 
-        submitted = st.form_submit_button(label="Submit")
+    with col2:
+        st.write("NOTE: Uploading more than 1000 nodes might consume more processing time.")
+        st.write("Visualize Options:")
+        is_visualize_graph = st.checkbox("Visualize graph")
+        is_visualize_subgraph = st.checkbox("Visualize subgraph")
+
+    submitted = st.button(label="Submit")
 
     if submitted:
         st.session_state["is_visualize_graph"] = is_visualize_graph
@@ -175,6 +186,12 @@ def main():
         st.session_state["motif_size"] = motif_size
         st.session_state["number_of_random_graphs"] = number_of_random_graphs
         st.session_state["nemo_count_option"] = nemo_count_type
+
+        st.session_state["is_sampling_selected"] = use_sampling
+        if use_sampling:
+            st.session_state["input_probabilities"] = input_probabilities
+        else:
+            st.session_state["input_probabilities"] = None
 
         start_time = time.time()
         form_callback(start_time)
