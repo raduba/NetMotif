@@ -22,13 +22,15 @@ class ESU:
         'A Faster Algorithm for Detecting Network Motifs' paper by Wernicke, which runs full
         subgraph enumeration when all probabilities are 1.0 and the sampling method when nodes are
         explored with the configured tree level probability.
+
+        When probabilities is None, returns the full subgraph enumeration.
         """
         if probabilities is not None:
             if len(probabilities) != size:
                 raise ValueError("probabilities must have size equal to motif size")
 
-            if any(p < 0.0 or p > 1.0 for p in probabilities):
-                raise ValueError("probabilities must have 0.0 <= p <= 1.0")
+            if any(p <= 0.0 or p > 1.0 for p in probabilities):
+                raise ValueError("probabilities must have 0.0 < p <= 1.0")
 
         self.G = G
         self.G_undirected = (
@@ -41,9 +43,7 @@ class ESU:
         self.nodes = list(self.G.nodes())
         self._node_indices = {n: i for i, n in enumerate(self.nodes)}
         self._total_subgraphs = 0
-        self._probabilities = (
-            [1.0 for _ in range(self.size)] if probabilities is None else probabilities
-        )
+        self._probabilities = probabilities
 
         # Canonical label -> [number of subgraphs, reference subgraph nodes]
         enumerate_subgraphs: Dict[str, List[int | List]] = {}
@@ -85,7 +85,7 @@ class ESU:
         the probability given by level.
         """
         for node in self.nodes:
-            if random.random() >= self._probabilities[0]:
+            if self._probabilities is not None and random.random() >= self._probabilities[0]:
                 continue
             node_list = [node]
             node_visited = {node}
@@ -111,7 +111,10 @@ class ESU:
             # ensuring we only enumerate each subgraph once.
             # If we conditionally append to it, then we'll end up changing the graph.
             nodes_visited.add(node)
-            if random.random() >= self._probabilities[self.size - size + 1]:
+            if (
+                self._probabilities is not None
+                and random.random() >= self._probabilities[self.size - size + 1]
+            ):
                 continue
 
             node_list.append(node)

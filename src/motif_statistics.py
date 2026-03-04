@@ -1,10 +1,8 @@
 from src.graph_with_subgraph import GraphWithSubgraph
 from src.subgraph import Subgraph
-import math
 import scipy.stats
 import pandas as pd
 import streamlit as st
-import streamlit.components.v1 as components
 
 
 def draw_statistics(subgraph_table: dict):
@@ -33,6 +31,10 @@ def process_statistics(
 ) -> dict[Subgraph, dict[str, float | None]]:
     subgraph_table: dict = {}  # subgraph -> [frequency, mean, sd, zscore, p-value]
     _generate_empty_subgraph_table(original_graph, subgraph_table)
+
+    if len(graphs) == 0:
+        return subgraph_table
+
     total_number_of_subgraphs = sum(original_graph.subgraph_list_enumerated.values())
     print(f"process_statistics: total_number_of_subgraphs = {total_number_of_subgraphs}")
     for subgraph in subgraph_table:
@@ -89,9 +91,6 @@ def _getMean(subgraph: Subgraph, graphs: list[GraphWithSubgraph]):
             graph_frequency = graph.subgraph_list_enumerated[subgraph]
             total_number_of_subgraphs = sum(graph.subgraph_list_enumerated.values())
             frequencys += graph_frequency / total_number_of_subgraphs
-            # st.write(graph_frequency)
-            # st.write(total_number_of_subgraphs)
-            # st.write(frequencys)
     return frequencys / len(graphs)
 
 
@@ -103,7 +102,10 @@ def _getStandardDeviation(mean, subgraph: Subgraph, graphs: list[GraphWithSubgra
             variance += (xi - mean) ** 2
         else:
             variance += 0
-    variance = variance / (len(graphs) - 1)
+
+    if len(graphs) > 1:
+        variance = variance / (len(graphs) - 1)
+
     return variance**0.5
 
 
