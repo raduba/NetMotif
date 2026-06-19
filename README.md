@@ -1,3 +1,8 @@
+# ARCHIVED
+> **This repository has been archived, and it is now read-only. It is no longer actively maintained.**
+> 
+> If you wish to continue to develop this code yourself, feel free to fork this repository or look at existing forks for updated versions.
+
 # NetMotif
 
 ## Local Development Setup
